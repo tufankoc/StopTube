@@ -14,9 +14,13 @@
 
 ## 📸 Canlı Önizleme / Visual Showcase
 
-| 🛑 YouTube Akışında Bilişsel Damgalar & Blur | ⚡ Minimalist Kontrol & Ayar Paneli |
-| :---: | :---: |
-| ![StopTube Feed Preview](docs/preview.png) | ![StopTube Popup](docs/popup.png) |
+<div align="center">
+  <p><b>🛑 YouTube Akışında Bilişsel Damgalar & Akıllı Blur</b></p>
+  <img src="docs/preview.png" alt="StopTube Feed Preview" width="100%" style="border-radius: 12px; margin-bottom: 20px;">
+  <br><br>
+  <p><b>⚡ Minimalist Kontrol, TR/EN Dil Seçimi & 30 Günlük Yerel Hafıza</b></p>
+  <img src="docs/popup-ui.png" alt="StopTube Popup Interface" width="480" style="border-radius: 12px;">
+</div>
 
 ---
 
