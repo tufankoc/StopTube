@@ -1,0 +1,375 @@
+(() => {
+  const CARDS = 'ytd-rich-item-renderer, ytd-compact-video-renderer, yt-lockup-view-model, ytd-video-renderer';
+  const records = new Map();
+  let enabled = false, scanTimer, stopped = false;
+  let watchRecord = null, commentsObserver = null;
+
+  const allowed = () => {
+    const p = location.pathname;
+    return !p.startsWith('/studio') && !p.startsWith('/tv');
+  };
+
+  function send(message) {
+    return new Promise(resolve => {
+      try {
+        chrome.runtime.sendMessage(message, response => {
+          if (chrome.runtime.lastError) return resolve({ ok: false, error: 'Eklenti yenilendi; sayfayı yenile.' });
+          resolve(response || { ok: false, error: 'Jev yanıt vermedi.' });
+        });
+      } catch {
+        stopped = true;
+        resolve({ ok: false, error: 'Eklenti yenilendi; sayfayı yenile.' });
+      }
+    });
+  }
+
+  function metadata(card) {
+    const anchor = card.querySelector('a#video-title, a#video-title-link, a.yt-lockup-metadata-view-model__title, h3 a[href*="/watch"]')
+      || [...card.querySelectorAll('a[href*="/watch?v="]')].find(a => (a.getAttribute('title') || a.textContent || '').trim());
+    if (!anchor) return null;
+
+    let url;
+    try { url = new URL(anchor.href, location.origin); } catch { return null; }
+    const id = url.searchParams.get('v');
+    if (url.origin !== location.origin || url.pathname !== '/watch' || !/^[\w-]{11}$/.test(id || '')) return null;
+
+    const title = (anchor.getAttribute('title') || anchor.textContent || '').trim().replace(/\s+/g, ' ');
+    if (!title) return null;
+
+    const channel = card.querySelector('ytd-channel-name a, #channel-name, .yt-content-metadata-view-model__metadata-row a')?.textContent?.trim() || '';
+
+    // Sadece gerçek arama snippet'i varsa al; kartın genel metin kapsayıcısını ASLA alma
+    const descEl = card.querySelector('#description-text, .metadata-snippet-container');
+    const description = descEl ? descEl.textContent.trim().replace(/\s+/g, ' ').slice(0, 200) : '';
+
+    return { id, title: title.slice(0, 240), channel: channel.slice(0, 100), description };
+  }
+
+  function getThumbContainer(card) {
+    return card.querySelector('ytd-thumbnail, .yt-lockup-view-model__media, yt-thumbnail-view-model')
+      || card.querySelector('#thumbnail, a#thumbnail');
+  }
+
+  function updateStamp(record, data, loading = false) {
+    const thumb = getThumbContainer(record.card);
+    if (!thumb) return;
+
+    record.overlay?.remove();
+    record.card.classList.remove('bir-cumle-flagged-stop', 'bir-cumle-flagged-clickbait', 'bir-cumle-flagged-valuable');
+    thumb.classList.remove('bir-cumle-thumb-stop', 'bir-cumle-thumb-clickbait');
+
+    if (loading) {
+      const loadOverlay = document.createElement('div');
+      loadOverlay.className = 'bir-cumle-thumb-overlay bir-cumle-thumb-loading';
+      loadOverlay.setAttribute('aria-hidden', 'true');
+      loadOverlay.innerHTML = `<span class="bir-cumle-thumb-loading-badge">JEV TARTIYOR…</span>`;
+      thumb.style.setProperty('position', 'relative', 'important');
+      thumb.style.setProperty('overflow', 'hidden', 'important');
+      thumb.style.setProperty('border-radius', '12px', 'important');
+      thumb.appendChild(loadOverlay);
+      record.overlay = loadOverlay;
+      return;
+    }
+
+    if (!data || !data.verdict) return;
+
+    const overlay = document.createElement('div');
+    overlay.className = `bir-cumle-thumb-overlay ${data.cssClass || ''}`;
+    overlay.setAttribute('aria-hidden', 'true');
+
+    let icon = '🛑';
+    if (data.verdict === 'clickbait') icon = '⚠️';
+    if (data.verdict === 'valuable') icon = '✦';
+    if (data.verdict === 'entertainment') icon = '✦';
+    if (data.verdict === 'other') icon = '✦';
+
+    const wasteHtml = data.waste !== null ? `<span class="bir-cumle-thumb-waste">Atık: %${data.waste}</span>` : '';
+    const consensusHtml = data.consensusBadge ? `<span class="bir-cumle-thumb-consensus">${data.consensusBadge}</span>` : '';
+
+    overlay.innerHTML = `
+      <div class="bir-cumle-thumb-center">
+        <div class="bir-cumle-stamp-header">
+          <span class="bir-cumle-stamp-icon">${icon}</span>
+          <span class="bir-cumle-stamp-title">${data.badge}</span>
+          ${data.subtitle ? `<span class="bir-cumle-stamp-subtitle">${data.subtitle}</span>` : ''}
+        </div>
+        <p class="bir-cumle-thumb-text">${data.text}</p>
+        <div class="bir-cumle-thumb-meta">
+          ${wasteHtml}
+          ${consensusHtml}
+        </div>
+      </div>
+    `;
+
+    if (data.verdict === 'stop') {
+      record.card.classList.add('bir-cumle-flagged-stop');
+      thumb.classList.add('bir-cumle-thumb-stop');
+    } else if (data.verdict === 'clickbait') {
+      record.card.classList.add('bir-cumle-flagged-clickbait');
+      thumb.classList.add('bir-cumle-thumb-clickbait');
+    } else if (data.verdict === 'valuable') {
+      record.card.classList.add('bir-cumle-flagged-valuable');
+    }
+
+    thumb.style.setProperty('position', 'relative', 'important');
+    thumb.style.setProperty('overflow', 'hidden', 'important');
+    thumb.style.setProperty('border-radius', '12px', 'important');
+
+    thumb.appendChild(overlay);
+    record.overlay = overlay;
+  }
+
+  function render(record, response, error = false, loading = false) {
+    if (loading) {
+      updateStamp(record, null, true);
+      return;
+    }
+
+    if (error) {
+      record.overlay?.remove();
+      const thumb = getThumbContainer(record.card);
+      if (thumb) {
+        thumb.classList.remove('bir-cumle-thumb-stop', 'bir-cumle-thumb-clickbait');
+      }
+      record.card.classList.remove('bir-cumle-flagged-stop', 'bir-cumle-flagged-clickbait', 'bir-cumle-flagged-valuable');
+      return;
+    }
+
+    // Doğrudan görsel üzeri STOP ve teşhis overlay'ini bas
+    updateStamp(record, response, false);
+  }
+
+  async function run(record) {
+    if (document.hidden || record.busy || record.done || !enabled || !allowed()) return;
+    record.busy = true;
+    record.attempted = true;
+    render(record, null, false, true);
+
+    const response = await send({ type: 'analyze', video: record.video });
+    record.busy = false;
+
+    if (records.get(record.card) !== record || !enabled || !allowed()) return;
+    record.done = response.ok;
+    render(record, response.ok ? response : response.error, !response.ok);
+  }
+
+  const observer = new IntersectionObserver(entries => {
+    for (const entry of entries) {
+      if (entry.isIntersecting) {
+        const record = records.get(entry.target);
+        if (record && !record.attempted) run(record);
+      }
+    }
+  }, { threshold: 0.15 });
+
+  function remove(card, record) {
+    observer.unobserve(card);
+    record.overlay?.remove();
+    card.classList.remove('bir-cumle-flagged-stop', 'bir-cumle-flagged-clickbait', 'bir-cumle-flagged-valuable');
+    records.delete(card);
+  }
+
+  function scan() {
+    if (stopped) return;
+    for (const [card, record] of records) {
+      if (!card.isConnected || !enabled || !allowed()) remove(card, record);
+    }
+    if (document.hidden || !enabled || !allowed()) return;
+
+    for (const card of document.querySelectorAll(CARDS)) {
+      if (card.parentElement?.closest(CARDS)) continue;
+      if (card.closest('ytd-ad-slot-renderer, ytd-promoted-sparkles-web-renderer')) continue;
+
+      const video = metadata(card);
+      const old = records.get(card);
+
+      if (!video) {
+        if (old) remove(card, old);
+        continue;
+      }
+
+      const signature = JSON.stringify(video);
+      if (old?.signature === signature) {
+        const rect = card.getBoundingClientRect();
+        if (!old.done && !old.busy && !old.attempted && rect.bottom > 0 && rect.top < innerHeight) {
+          run(old);
+        }
+        continue;
+      }
+
+      if (old) remove(card, old);
+
+      // Kart altına ayrı kutu EKLEME! Her şey doğrudan thumbnail görselinin üzerine basılacak!
+      const record = { card, video, signature, busy: false, done: false, overlay: null };
+      records.set(card, record);
+
+      observer.observe(card);
+    }
+
+    scanWatchPage();
+  }
+
+  // =========================================================================
+  // WATCH SAYFASI: BİLİŞSEL RADAR & İZLEYİCİ KONSENSÜSÜ BANNERI
+  // =========================================================================
+  function getWatchComments() {
+    const commentEls = document.querySelectorAll('ytd-comments#comments ytd-comment-thread-renderer #content-text, #comment-content #content-text');
+    return [...commentEls].map(el => (el.textContent || '').trim()).filter(c => c.length > 5).slice(0, 8);
+  }
+
+  function getWatchDescription() {
+    const descEl = document.querySelector('#description-inline-expander, #description, ytd-text-inline-expander');
+    return (descEl ? descEl.textContent : '').trim().replace(/\s+/g, ' ').slice(0, 600);
+  }
+
+  function renderWatchBanner(banner, response, error = false, loading = false) {
+    if (loading) {
+      banner.dataset.state = 'loading';
+      banner.innerHTML = `
+        <div class="bir-cumle-watch-inner">
+          <div class="bir-cumle-watch-header">
+            <span class="bir-cumle-pill bir-cumle-pill-loading">BİLİŞSEL RADAR</span>
+            <span class="bir-cumle-engine">YORUM & AÇIKLAMA ANALİZİ</span>
+          </div>
+          <p class="bir-cumle-watch-text">İzleyici yorumları, açıklama ve içerik taranıyor…</p>
+        </div>
+      `;
+      return;
+    }
+
+    if (error) {
+      banner.dataset.state = 'error';
+      banner.innerHTML = `
+        <div class="bir-cumle-watch-inner">
+          <div class="bir-cumle-watch-header">
+            <span class="bir-cumle-pill bir-cumle-pill-error">HATA</span>
+          </div>
+          <p class="bir-cumle-watch-text">${typeof response === 'string' ? response : (response?.error || 'Analiz yapılamadı.')}</p>
+        </div>
+      `;
+      return;
+    }
+
+    banner.dataset.state = 'ready';
+    banner.dataset.verdict = response.verdict;
+
+    let icon = '🛑';
+    if (response.verdict === 'clickbait') icon = '⚠️';
+    if (response.verdict === 'valuable') icon = '💡';
+    if (response.verdict === 'entertainment') icon = '🍿';
+
+    const wasteHtml = response.waste !== null ? `<span class="bir-cumle-waste-pill ${response.waste >= 65 ? 'waste-high' : response.waste <= 30 ? 'waste-low' : 'waste-mid'}">Atık Riski: %${response.waste}</span>` : '';
+    const consensusHtml = response.consensusBadge ? `<span class="bir-cumle-consensus-pill">${response.consensusBadge}</span>` : '';
+    const quoteHtml = response.topQuote ? `<div class="bir-cumle-watch-quote"><span>💬 Öne Çıkan Yorum:</span> <i>"${response.topQuote}"</i></div>` : '';
+
+    banner.innerHTML = `
+      <div class="bir-cumle-watch-inner">
+        <div class="bir-cumle-watch-header">
+          <div class="bir-cumle-pills">
+            <span class="bir-cumle-pill ${response.pillClass || 'bir-cumle-pill-other'}">${icon} ${response.badge} · ${response.subtitle}</span>
+            ${wasteHtml}
+            ${consensusHtml}
+          </div>
+          <span class="bir-cumle-engine">JEV DERİN RADAR</span>
+        </div>
+        <p class="bir-cumle-watch-text">${response.text}</p>
+        ${quoteHtml}
+      </div>
+    `;
+  }
+
+  async function runWatchAnalysis(video, banner) {
+    if (watchRecord && watchRecord.running) return;
+    if (!watchRecord) watchRecord = {};
+    watchRecord.running = true;
+    renderWatchBanner(banner, null, false, true);
+
+    const response = await send({ type: 'analyze', video });
+    watchRecord.running = false;
+    watchRecord.done = response.ok;
+    renderWatchBanner(banner, response.ok ? response : response.error, !response.ok);
+  }
+
+  function scanWatchPage() {
+    if (location.pathname !== '/watch' || !enabled) {
+      if (watchRecord?.banner) {
+        watchRecord.banner.remove();
+        watchRecord = null;
+      }
+      return;
+    }
+
+    const urlParams = new URLSearchParams(location.search);
+    const videoId = urlParams.get('v');
+    if (!videoId || !/^[\w-]{11}$/.test(videoId)) return;
+
+    const titleEl = document.querySelector('h1.ytd-watch-metadata yt-formatted-string, #title h1, h1.title');
+    const title = titleEl?.textContent?.trim().replace(/\s+/g, ' ');
+    if (!title) return;
+
+    const channel = document.querySelector('#owner #channel-name a, ytd-watch-metadata #channel-name a')?.textContent?.trim() || '';
+    const description = getWatchDescription();
+    const comments = getWatchComments();
+
+    const mount = document.querySelector('ytd-watch-metadata #above-the-fold, #meta, #description-and-actions');
+    if (!mount) return;
+
+    let banner = document.querySelector('.bir-cumle-watch-banner');
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.className = 'bir-cumle-watch-banner';
+      const targetBefore = mount.querySelector('#description, #bottom-row');
+      if (targetBefore) {
+        mount.insertBefore(banner, targetBefore);
+      } else {
+        mount.appendChild(banner);
+      }
+    }
+
+    const sig = JSON.stringify({ id: videoId, title, descLen: description.length, commentCount: comments.length });
+    if (watchRecord?.sig === sig) return;
+
+    const video = { id: videoId, title, channel, description, comments };
+    watchRecord = { video, banner, sig, running: false, done: false };
+    runWatchAnalysis(video, banner);
+
+    if (!commentsObserver) {
+      const commentsContainer = document.querySelector('ytd-comments#comments');
+      if (commentsContainer) {
+        commentsObserver = new MutationObserver(() => {
+          const freshComments = getWatchComments();
+          if (freshComments.length >= 3 && (!watchRecord?.video?.comments || watchRecord.video.comments.length < freshComments.length)) {
+            clearTimeout(scanTimer);
+            scanTimer = setTimeout(scan, 800);
+          }
+        });
+        commentsObserver.observe(commentsContainer, { childList: true, subtree: true });
+      }
+    }
+  }
+
+  function schedule() {
+    clearTimeout(scanTimer);
+    scanTimer = setTimeout(scan, 200);
+  }
+
+  async function refresh() {
+    if (stopped || document.hidden) return;
+    const state = await send({ type: 'status' });
+    enabled = state.ok && state.enabled && state.configured;
+    scan();
+  }
+
+  new MutationObserver(schedule).observe(document.documentElement, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['href', 'title']
+  });
+
+  document.addEventListener('yt-navigate-finish', refresh);
+  document.addEventListener('visibilitychange', refresh);
+  window.addEventListener('focus', refresh);
+  setInterval(refresh, 5000);
+  refresh();
+})();

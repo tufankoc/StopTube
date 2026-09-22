@@ -1,0 +1,631 @@
+/* ==========================================================================
+   Bir Cümle · Jev Bilişsel Zaman Değeri & STOP Radarı (Görsel Üzeri CSS)
+   ========================================================================== */
+
+/* ==========================================================================
+   1. GÖRSEL ÜZERİ STOP VE METİN OVERLAY'İ (Thumbnail Overlay)
+   ========================================================================== */
+
+.bir-cumle-thumb-overlay {
+  position: absolute !important;
+  inset: 0 !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 30 !important;
+  pointer-events: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  padding: 12px 14px !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  border-radius: 12px !important;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Avenir Next", "Helvetica Neue", sans-serif !important;
+  animation: bcOverlayFade 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transition: background 0.3s ease, opacity 0.3s ease !important;
+}
+
+@keyframes bcOverlayFade {
+  0% { opacity: 0; transform: scale(0.96); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.bir-cumle-thumb-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 6px;
+  max-width: 92%;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+}
+
+/* --- Yükleniyor Göstergesi --- */
+.bir-cumle-thumb-loading {
+  background: rgba(0, 0, 0, 0.25) !important;
+  justify-content: flex-start !important;
+  align-items: flex-start !important;
+  padding: 8px !important;
+}
+
+.bir-cumle-thumb-loading-badge {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #ffffff;
+  background: rgba(0, 0, 0, 0.65);
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  animation: bcPulse 1.4s ease-in-out infinite;
+}
+
+/* --- STOP Overlay Stili --- */
+.stamp-stop.bir-cumle-thumb-overlay {
+  background: radial-gradient(circle at center, rgba(160, 0, 24, 0.85) 0%, rgba(15, 0, 3, 0.94) 100%) !important;
+}
+
+.stamp-stop .bir-cumle-stamp-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  background: #e60026;
+  color: #ffffff;
+  border: 2px solid #ffffff;
+  box-shadow: 0 4px 18px rgba(230, 0, 38, 0.8), 0 2px 6px rgba(0, 0, 0, 0.7);
+}
+
+.stamp-stop .bir-cumle-stamp-title {
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  line-height: 1;
+}
+
+.stamp-stop .bir-cumle-stamp-subtitle {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  background: rgba(0, 0, 0, 0.5);
+  color: #ffcdd2;
+  padding: 2px 6px;
+  border-radius: 4px;
+  line-height: 1.2;
+}
+
+/* Görsel Üzerindeki Teşhis Metni */
+.bir-cumle-thumb-text {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: #ffffff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.95), 0 0 10px rgba(0, 0, 0, 0.8);
+  margin: 3px 0 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  max-width: 100%;
+}
+
+.bir-cumle-thumb-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.bir-cumle-thumb-waste {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.bir-cumle-thumb-consensus {
+  font-size: 9px;
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.5);
+  color: #ffffff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* --- TIK TUZAĞI Overlay Stili --- */
+.stamp-clickbait.bir-cumle-thumb-overlay {
+  background: radial-gradient(circle at center, rgba(190, 95, 0, 0.82) 0%, rgba(20, 10, 0, 0.90) 100%) !important;
+}
+
+.stamp-clickbait .bir-cumle-stamp-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  background: #f59e0b;
+  color: #1a1a1a;
+  border: 2px solid #ffffff;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.7);
+}
+
+.stamp-clickbait .bir-cumle-stamp-title {
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 1.2px;
+}
+
+.stamp-clickbait .bir-cumle-stamp-subtitle {
+  font-size: 9px;
+  font-weight: 800;
+  background: rgba(0, 0, 0, 0.25);
+  color: #1a1a1a;
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+
+/* --- İZLENİR / DEĞERLİ Overlay Stili (Zarif Köşe Rozeti) --- */
+.stamp-valuable.bir-cumle-thumb-overlay {
+  background: none !important;
+  justify-content: flex-start !important;
+  align-items: flex-start !important;
+  padding: 10px !important;
+}
+
+.stamp-valuable .bir-cumle-thumb-center {
+  align-items: flex-start;
+  text-align: left;
+}
+
+.stamp-valuable .bir-cumle-stamp-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 7px;
+  background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+  color: #ffffff;
+  border: 2px solid #ffffff;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.6);
+}
+
+.stamp-valuable .bir-cumle-stamp-title {
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 1.2px;
+}
+
+.stamp-valuable .bir-cumle-thumb-text,
+.stamp-valuable .bir-cumle-thumb-meta {
+  display: none !important;
+}
+
+/* --- EĞLENCE Overlay Stili --- */
+.stamp-entertainment.bir-cumle-thumb-overlay {
+  background: none !important;
+  justify-content: flex-start !important;
+  align-items: flex-start !important;
+  padding: 10px !important;
+}
+
+.stamp-entertainment .bir-cumle-thumb-center {
+  align-items: flex-start;
+}
+
+.stamp-entertainment .bir-cumle-stamp-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 7px;
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+  color: #ffffff;
+  border: 1.5px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.5);
+}
+
+.stamp-entertainment .bir-cumle-stamp-title {
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.stamp-entertainment .bir-cumle-thumb-text,
+.stamp-entertainment .bir-cumle-thumb-meta {
+  display: none !important;
+}
+
+/* --- BELİRSİZ / NÖTR Overlay Stili (Zarif Duman Köşe Rozeti) --- */
+.stamp-other.bir-cumle-thumb-overlay {
+  background: none !important;
+  justify-content: flex-start !important;
+  align-items: flex-start !important;
+  padding: 10px !important;
+}
+
+.stamp-other .bir-cumle-thumb-center {
+  align-items: flex-start;
+  text-align: left;
+}
+
+.stamp-other .bir-cumle-stamp-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 7px;
+  background: rgba(28, 28, 30, 0.82);
+  color: #e4e4e7;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.stamp-other .bir-cumle-stamp-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+}
+
+.stamp-other .bir-cumle-stamp-subtitle {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  color: #a1a1aa;
+}
+
+.stamp-other .bir-cumle-thumb-text,
+.stamp-other .bir-cumle-thumb-meta {
+  display: none !important;
+}
+
+/* ==========================================================================
+   2. GÖRSEL BLURLAMA & HOVER DURUMUNDA DÜZGÜN GÖZÜKME
+   ========================================================================== */
+
+/* Varsayılan: Video küçük resmi blurlu olsun */
+.bir-cumle-flagged-stop ytd-thumbnail img,
+.bir-cumle-flagged-stop #thumbnail img,
+.bir-cumle-flagged-stop a#thumbnail img,
+.bir-cumle-flagged-stop .yt-lockup-view-model__media img,
+.bir-cumle-flagged-stop yt-image img,
+.bir-cumle-flagged-stop yt-thumbnail-view-model img,
+.bir-cumle-flagged-stop img.yt-core-image,
+.bir-cumle-thumb-stop img {
+  filter: blur(14px) brightness(0.60) saturate(75%) !important;
+  transform: scale(1.08) !important;
+  transition: filter 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s ease !important;
+}
+
+/* Üzerine gelince (HOVER): Tamamen düzgün, net ve orijinal gözüksün */
+.bir-cumle-flagged-stop:hover ytd-thumbnail img,
+.bir-cumle-flagged-stop:hover #thumbnail img,
+.bir-cumle-flagged-stop:hover a#thumbnail img,
+.bir-cumle-flagged-stop:hover .yt-lockup-view-model__media img,
+.bir-cumle-flagged-stop:hover yt-image img,
+.bir-cumle-flagged-stop:hover yt-thumbnail-view-model img,
+.bir-cumle-flagged-stop:hover img.yt-core-image,
+.bir-cumle-thumb-stop:hover img,
+.bir-cumle-flagged-stop ytd-thumbnail:hover img,
+.bir-cumle-flagged-stop #thumbnail:hover img,
+.bir-cumle-flagged-stop .yt-lockup-view-model__media:hover img {
+  filter: blur(0px) brightness(1) saturate(100%) !important;
+  transform: scale(1) !important;
+}
+
+/* TIK TUZAĞI: Orta derece blur */
+.bir-cumle-flagged-clickbait ytd-thumbnail img,
+.bir-cumle-flagged-clickbait #thumbnail img,
+.bir-cumle-flagged-clickbait a#thumbnail img,
+.bir-cumle-flagged-clickbait .yt-lockup-view-model__media img,
+.bir-cumle-flagged-clickbait yt-image img,
+.bir-cumle-flagged-clickbait yt-thumbnail-view-model img,
+.bir-cumle-flagged-clickbait img.yt-core-image,
+.bir-cumle-thumb-clickbait img {
+  filter: blur(8px) brightness(0.75) !important;
+  transform: scale(1.04) !important;
+  transition: filter 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s ease !important;
+}
+
+.bir-cumle-flagged-clickbait:hover ytd-thumbnail img,
+.bir-cumle-flagged-clickbait:hover #thumbnail img,
+.bir-cumle-flagged-clickbait:hover a#thumbnail img,
+.bir-cumle-flagged-clickbait:hover .yt-lockup-view-model__media img,
+.bir-cumle-flagged-clickbait:hover yt-image img,
+.bir-cumle-flagged-clickbait:hover yt-thumbnail-view-model img,
+.bir-cumle-flagged-clickbait:hover img.yt-core-image,
+.bir-cumle-thumb-clickbait:hover img {
+  filter: blur(0px) brightness(1) !important;
+  transform: scale(1) !important;
+}
+
+/* Hover durumunda overlay tamamen kalksın ki görsel arkada %100 net ve engelsiz görünsün */
+.bir-cumle-flagged-stop:hover .bir-cumle-thumb-overlay,
+.bir-cumle-flagged-clickbait:hover .bir-cumle-thumb-overlay,
+.bir-cumle-thumb-stop:hover .bir-cumle-thumb-overlay,
+.bir-cumle-thumb-clickbait:hover .bir-cumle-thumb-overlay,
+.bir-cumle-flagged-stop ytd-thumbnail:hover .bir-cumle-thumb-overlay,
+.bir-cumle-flagged-stop #thumbnail:hover .bir-cumle-thumb-overlay,
+.bir-cumle-flagged-stop .yt-lockup-view-model__media:hover .bir-cumle-thumb-overlay {
+  background: transparent !important;
+  opacity: 0 !important;
+  transition: opacity 0.25s ease, background 0.25s ease !important;
+}
+
+.bir-cumle-flagged-stop:hover .bir-cumle-thumb-center,
+.bir-cumle-flagged-clickbait:hover .bir-cumle-thumb-center,
+.bir-cumle-thumb-stop:hover .bir-cumle-thumb-center,
+.bir-cumle-thumb-clickbait:hover .bir-cumle-thumb-center,
+.bir-cumle-flagged-stop ytd-thumbnail:hover .bir-cumle-thumb-center,
+.bir-cumle-flagged-stop #thumbnail:hover .bir-cumle-thumb-center,
+.bir-cumle-flagged-stop .yt-lockup-view-model__media:hover .bir-cumle-thumb-center {
+  opacity: 0 !important;
+  transform: scale(0.92) !important;
+  transition: opacity 0.25s ease, transform 0.25s ease !important;
+}
+
+/* ==========================================================================
+   3. WATCH SAYFASI: BİLİŞSEL RADAR VE İZLEYİCİ KONSENSÜSÜ BANNERI
+   ========================================================================== */
+
+.bir-cumle-watch-banner {
+  --bc-bg: #faf5ee;
+  --bc-border: #e8d9cc;
+  --bc-text: #2f251f;
+  --bc-muted: #7b6c62;
+  --bc-accent: #a54419;
+
+  margin: 12px 0 10px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--bc-border);
+  background: var(--bc-bg);
+  color: var(--bc-text);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  font: 12px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Display", "Avenir Next", "Helvetica Neue", sans-serif;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+html[dark] .bir-cumle-watch-banner {
+  --bc-bg: #1e1915;
+  --bc-border: #3d3027;
+  --bc-text: #ece2da;
+  --bc-muted: #a6988c;
+  --bc-accent: #ffb180;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.bir-cumle-watch-banner[data-verdict="stop"] {
+  border-left: 5px solid #dc2626 !important;
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.08) 0%, var(--bc-bg) 100%) !important;
+}
+
+.bir-cumle-watch-banner[data-verdict="clickbait"] {
+  border-left: 5px solid #f59e0b !important;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, var(--bc-bg) 100%) !important;
+}
+
+.bir-cumle-watch-banner[data-verdict="valuable"] {
+  border-left: 5px solid #10b981 !important;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, var(--bc-bg) 100%) !important;
+}
+
+.bir-cumle-watch-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bir-cumle-watch-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.bir-cumle-pills {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.bir-cumle-pill {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.bir-cumle-pill-loading {
+  background: #f1ede6;
+  color: var(--bc-muted);
+  border: 1px solid var(--bc-border);
+  animation: bcPulse 1.4s ease-in-out infinite;
+}
+
+html[dark] .bir-cumle-pill-loading {
+  background: #2b231d;
+  color: #a6988c;
+  border-color: #4a3c31;
+}
+
+.bir-cumle-pill-error {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #f87171;
+}
+
+html[dark] .bir-cumle-pill-error {
+  background: #450a0a;
+  color: #fca5a5;
+  border-color: #7f1d1d;
+}
+
+.bir-cumle-pill-stop {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+}
+
+html[dark] .bir-cumle-pill-stop {
+  background: #450a0a;
+  color: #fca5a5;
+  border-color: #991b1b;
+}
+
+.bir-cumle-pill-clickbait {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+html[dark] .bir-cumle-pill-clickbait {
+  background: #451a03;
+  color: #fde68a;
+  border-color: #b45309;
+}
+
+.bir-cumle-pill-valuable {
+  background: #d1fae5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+html[dark] .bir-cumle-pill-valuable {
+  background: #064e3b;
+  color: #a7f3d0;
+  border-color: #047857;
+}
+
+.bir-cumle-pill-entertainment {
+  background: #ede9fe;
+  color: #6d28d9;
+  border: 1px solid #ddd6fe;
+}
+
+html[dark] .bir-cumle-pill-entertainment {
+  background: #2e1065;
+  color: #ddd6fe;
+  border-color: #6d28d9;
+}
+
+.bir-cumle-pill-other {
+  background: #f1ede6;
+  color: var(--bc-muted);
+  border: 1px solid var(--bc-border);
+}
+
+html[dark] .bir-cumle-pill-other {
+  background: #2b231d;
+  color: #a6988c;
+  border-color: #4a3c31;
+}
+
+.bir-cumle-waste-pill {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.4px;
+}
+
+.bir-cumle-waste-pill.waste-high {
+  background: rgba(220, 38, 38, 0.12);
+  color: #dc2626;
+  border: 1px solid rgba(220, 38, 38, 0.25);
+}
+
+html[dark] .bir-cumle-waste-pill.waste-high {
+  background: rgba(239, 68, 68, 0.18);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.bir-cumle-waste-pill.waste-low {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+html[dark] .bir-cumle-waste-pill.waste-low {
+  background: rgba(16, 185, 129, 0.18);
+  color: #34d399;
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+.bir-cumle-consensus-pill {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+  background: rgba(120, 108, 98, 0.15);
+  color: var(--bc-text);
+  border: 1px solid var(--bc-border);
+}
+
+.bir-cumle-engine {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: var(--bc-accent);
+  opacity: 0.85;
+}
+
+.bir-cumle-watch-text {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.6;
+  margin: 2px 0 0;
+  color: var(--bc-text);
+}
+
+.bir-cumle-watch-quote {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--bc-muted);
+  background: rgba(0, 0, 0, 0.04);
+  padding: 6px 12px;
+  border-radius: 6px;
+  border-left: 2px solid var(--bc-accent);
+}
+
+html[dark] .bir-cumle-watch-quote {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.bir-cumle-watch-quote span {
+  font-weight: 700;
+  color: var(--bc-text);
+  margin-right: 4px;
+}
+
+@keyframes bcPulse {
+  50% { opacity: 0.45; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bir-cumle-thumb-overlay { animation: none; }
+  .bir-cumle-pill-loading { animation: none; }
+  .bir-cumle-flagged-stop ytd-thumbnail img,
+  .bir-cumle-flagged-stop #thumbnail img,
+  .bir-cumle-flagged-stop .yt-lockup-view-model__media img { transition: none !important; }
+}
