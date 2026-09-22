@@ -100,6 +100,43 @@ header {
   background: rgba(52, 211, 153, 0.1);
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.lang-switch {
+  display: inline-flex;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 1px;
+}
+
+.lang-btn {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font: 700 9px/1 var(--font);
+  letter-spacing: 0.5px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.lang-btn:hover {
+  color: var(--text);
+}
+
+.lang-btn.active {
+  background: var(--panel-hover);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
 /* ==========================================================================
    MAIN
    ========================================================================== */

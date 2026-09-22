@@ -12,10 +12,14 @@
       <span class="mark" aria-hidden="true">🛑</span>
       <div class="brand-text">
         <span class="brand-title">ZAMAN RADARI</span>
-        <span class="brand-sub">Bilişsel YouTube Kalkanı</span>
+        <span id="brand-sub" class="brand-sub">Bilişsel YouTube Kalkanı</span>
       </div>
     </div>
-    <div class="header-status">
+    <div class="header-right">
+      <div class="lang-switch" role="group" aria-label="Dil / Language">
+        <button type="button" id="lang-tr" class="lang-btn active" data-lang="tr">TR</button>
+        <button type="button" id="lang-en" class="lang-btn" data-lang="en">EN</button>
+      </div>
       <span id="badge" class="badge">Bağlı değil</span>
     </div>
   </header>
@@ -25,9 +29,9 @@
     <div class="telemetry-bar">
       <div class="telemetry-item">
         <span class="telemetry-dot"></span>
-        <span class="telemetry-label">Kalıcı Hafıza:</span>
+        <span id="telemetry-label" class="telemetry-label">Kalıcı Hafıza:</span>
         <b id="cached">0</b>
-        <span class="telemetry-unit">video (0 ms)</span>
+        <span id="telemetry-unit" class="telemetry-unit">video (0 ms)</span>
       </div>
       <button id="clear" class="subtle-btn" type="button" title="Hafızadaki videoları temizle">Temizle</button>
     </div>
@@ -35,19 +39,19 @@
     <!-- API Anahtarı Formu -->
     <form id="key-form" class="key-form">
       <div class="field-header">
-        <label for="api-key">TypeSafe API Anahtarı</label>
+        <label id="api-key-label" for="api-key">TypeSafe API Anahtarı</label>
         <button type="button" id="reveal" class="text-link" aria-label="API anahtarını göster">Göster</button>
       </div>
       <div class="input-row">
         <input id="api-key" name="api-key" type="password" autocomplete="off" spellcheck="false" placeholder="Anahtarını buraya gir" minlength="8" maxlength="2048">
         <button class="primary-btn" type="submit" id="save" title="Kaydet">
-          <span>Kaydet</span>
+          <span id="save-text">Kaydet</span>
         </button>
       </div>
       <div class="checkbox-row">
         <label class="checkbox-label" for="remember-key">
           <input type="checkbox" id="remember-key" name="remember-key" checked>
-          <span>Bu cihazda hatırla (Kalıcı sakla)</span>
+          <span id="remember-key-text">Bu cihazda hatırla (Kalıcı sakla)</span>
         </label>
       </div>
     </form>
@@ -55,8 +59,8 @@
     <!-- Radar Aç / Kapat Şeridi -->
     <div class="toggle-card">
       <div class="toggle-info">
-        <span class="toggle-title">Otomatik STOP Radarı</span>
-        <small class="toggle-desc">Küçük resimlerde 🛑 damgalar ve blur</small>
+        <span id="toggle-title" class="toggle-title">Otomatik STOP Radarı</span>
+        <small id="toggle-desc" class="toggle-desc">Küçük resimlerde 🛑 damgalar ve blur</small>
       </div>
       <label class="switch" title="Radarı Aç / Kapat">
         <input id="enabled" type="checkbox" aria-label="Otomatik STOP Radarı">
@@ -74,8 +78,8 @@
   </main>
 
   <footer>
-    <span>v1.0.0 · Jev System One</span>
-    <span>Oturum İstek: <b id="calls">0</b></span>
+    <span id="footer-version">v1.1.0 · Jev System One</span>
+    <span><span id="session-calls-label">Oturum İstek:</span> <b id="calls">0</b></span>
   </footer>
 
   <script src="popup.js"></script>

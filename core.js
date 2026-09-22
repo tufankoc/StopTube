@@ -9,6 +9,40 @@ export const VERDICTS = {
     subtitle: 'ZAMAN KAYBI',
     cssClass: 'stamp-stop',
     pillClass: 'bir-cumle-pill-stop',
+    tr: {
+      badge: 'STOP',
+      subtitle: 'ZAMAN KAYBI',
+      reasons: {
+        consumer_inventory: 'Kişisel eşya vitrini, oda turu veya bavul hazırlığı; somut bilgi içermeyen rutin kişisel vlog. Zaman kaybı, izlemeye değmez.',
+        sensational_clickbait: 'İçi boş abartılı başlık; merak sömürüsü haricinde kayda değer bir bilgi barındırmıyor. Zaman kaybı.',
+        reaction_or_humor: 'Sıradan tepki veya montaj videosu; bilgi değeri sıfır, zaman kaybı.',
+        technical_guide: 'Yüzeysel veya kurgusal rehber; somut teknik derinlikten yoksun, vakit hırsızı.',
+        analytical_review: 'Rutin sponsorlu tanıtım; bağımsız veya analitik bir inceleme değeri taşımıyor.',
+        default: 'Düşük bilgi yoğunluğu ve vakit hırsızı içerik; somut bir kazanım sağlamaz.'
+      },
+      consensusReasons: {
+        negative_waste: 'İzleyiciler ve açıklama teyit ediyor: Yalnızca sponsorlu vitrin ve boş muhabbet; somut bilgi yok, net zaman kaybı.',
+        mixed_feedback: 'İzleyici yorumları uyuşuk veya yüzeysel buluyor; vadedilen derinlik yok, izlemeye değmeyebilir.'
+      },
+      dislikeReason: ratio => `Topluluk onaylamıyor: %${ratio} dislike oranı. İzleyiciler içeriği yanıltıcı, vaadini karşılamayan veya zaman kaybı olarak değerlendirdi.`
+    },
+    en: {
+      badge: 'STOP',
+      subtitle: 'TIME WASTE',
+      reasons: {
+        consumer_inventory: 'Routine personal room haul, packing vlog or gear showcase; lacks analytical depth. Complete time sink.',
+        sensational_clickbait: 'Sensational curiosity trap; hollow exaggeration offering zero substantive knowledge.',
+        reaction_or_humor: 'Low-effort reaction or superficial montage; zero knowledge density, skip it.',
+        technical_guide: 'Shallow or staged guide lacking practical depth. Unproductive time waste.',
+        analytical_review: 'Routine sponsored product placement lacking rigorous objective review.',
+        default: 'Low knowledge density and time-wasting filler; offers no practical value.'
+      },
+      consensusReasons: {
+        negative_waste: 'Audience and description confirm: Sponsored product showcase with zero substance; net time waste.',
+        mixed_feedback: 'Audience reports superficial presentation with no real depth.'
+      },
+      dislikeReason: ratio => `Community rejection: ${ratio}% dislike ratio. Viewers flagged content as misleading or a waste of time.`
+    },
     reasons: {
       consumer_inventory: 'Kişisel eşya vitrini, oda turu veya bavul hazırlığı; somut bilgi içermeyen rutin kişisel vlog. Zaman kaybı, izlemeye değmez.',
       sensational_clickbait: 'İçi boş abartılı başlık; merak sömürüsü haricinde kayda değer bir bilgi barındırmıyor. Zaman kaybı.',
@@ -27,6 +61,34 @@ export const VERDICTS = {
     subtitle: 'DİKKAT',
     cssClass: 'stamp-clickbait',
     pillClass: 'bir-cumle-pill-clickbait',
+    tr: {
+      badge: 'TIK TUZAĞI',
+      subtitle: 'DİKKAT',
+      reasons: {
+        sensational_clickbait: 'Abartılı merak ve panik yemi; başlık tıklama tuzağı (clickbait), vadedilen somut içerik fos çıkabilir.',
+        consumer_inventory: 'Gizemli/abartılı başlık arkasına saklanmış standart tüketim tanıtımı.',
+        reaction_or_humor: 'Dramatize edilmiş kurgu veya tepki videosu; başlık beklentiyi yükseltiyor.',
+        default: 'Şişirilmiş vaat veya yapay merak tuzağı; bilgi yoğunluğu düşük olabilir, temkinli ol.'
+      },
+      consensusReasons: {
+        negative_waste: 'İzleyici yorumları uyarıyor: Başlık abartılı tık tuzağı (clickbait); içerik vaadi karşılamıyor, boşuna izlemeyin.',
+        mixed_feedback: 'İzleyiciler başlığın yanıltıcı olduğunu ve konunun yalnızca son birkaç dakikada yüzeysel geçildiğini belirtiyor.'
+      }
+    },
+    en: {
+      badge: 'CLICKBAIT',
+      subtitle: 'WARNING',
+      reasons: {
+        sensational_clickbait: 'Sensational panic or curiosity trap; content fails to deliver on the exaggerated title promise.',
+        consumer_inventory: 'Routine consumer showcase disguised behind an intriguing clickbait hook.',
+        reaction_or_humor: 'Dramatized reaction or scripted stunt with an overhyped title.',
+        default: 'Inflated promise or artificial curiosity hook; low cognitive substance, proceed with caution.'
+      },
+      consensusReasons: {
+        negative_waste: 'Audience warnings confirm: Deceptive clickbait; does not deliver on title, skip.',
+        mixed_feedback: 'Viewers note the title is misleading and substantive topic is barely skimmed at the end.'
+      }
+    },
     reasons: {
       sensational_clickbait: 'Abartılı merak ve panik yemi; başlık tıklama tuzağı (clickbait), vadedilen somut içerik fos çıkabilir.',
       consumer_inventory: 'Gizemli/abartılı başlık arkasına saklanmış standart tüketim tanıtımı.',
@@ -43,6 +105,30 @@ export const VERDICTS = {
     subtitle: 'DEĞERLİ',
     cssClass: 'stamp-valuable',
     pillClass: 'bir-cumle-pill-valuable',
+    tr: {
+      badge: 'İZLENİR',
+      subtitle: 'DEĞERLİ',
+      reasons: {
+        analytical_review: 'Derinlikli belgesel veya analitik inceleme; somut araştırma içerir, izlemeye değer.',
+        technical_guide: 'Uygulamalı teknik rehber; doğrudan beceri veya somut problem çözümüne odaklı, izlemeye değer.',
+        default: 'Yüksek bilgi yoğunluğuna sahip somut içerik; zaman ayırmaya değer.'
+      },
+      consensusReasons: {
+        positive_valuable: 'İzleyiciler onaylıyor: İçerik son derece öğretici, doğrudan konuya giren ve teknik derinliği yüksek bir kaynak. İzlemeye değer.'
+      }
+    },
+    en: {
+      badge: 'VALUABLE',
+      subtitle: 'MUST WATCH',
+      reasons: {
+        analytical_review: 'Substantive documentary or analytical breakdown; rigorous research, worth your attention.',
+        technical_guide: 'Actionable technical guide; directly teaches practical problem solving, high knowledge ROI.',
+        default: 'High knowledge density with concrete insights; genuine time investment.'
+      },
+      consensusReasons: {
+        positive_valuable: 'Audience confirms: Highly instructive, cuts straight to the core with impressive technical depth.'
+      }
+    },
     reasons: {
       analytical_review: 'Derinlikli belgesel veya analitik inceleme; somut araştırma içerir, izlemeye değer.',
       technical_guide: 'Uygulamalı teknik rehber; doğrudan beceri veya somut problem çözümüne odaklı, izlemeye değer.',
@@ -57,6 +143,28 @@ export const VERDICTS = {
     subtitle: 'KEYFÎ',
     cssClass: 'stamp-entertainment',
     pillClass: 'bir-cumle-pill-entertainment',
+    tr: {
+      badge: 'EĞLENCE',
+      subtitle: 'KEYFÎ',
+      reasons: {
+        reaction_or_humor: 'Kafa dağıtmalık mizah, skeç veya oyun içeriği; bilgi beklentisi olmadan keyfî izlenebilir.',
+        default: 'Vakit geçirme ve kafa dinleme amaçlı eğlence içeriği.'
+      },
+      consensusReasons: {
+        casual_chitchat: 'İzleyiciler keyifli ve eğlenceli bir vakit geçirme içeriği olduğunu belirtiyor; bilgi beklentisi olmadan izlenebilir.'
+      }
+    },
+    en: {
+      badge: 'ENTERTAINMENT',
+      subtitle: 'CASUAL',
+      reasons: {
+        reaction_or_humor: 'Casual humor, gaming or comedic sketch; enjoy for relaxation with no educational pretense.',
+        default: 'Casual entertainment for relaxation and leisure.'
+      },
+      consensusReasons: {
+        casual_chitchat: 'Audience highlights fun, casual entertainment; watch for recreational enjoyment.'
+      }
+    },
     reasons: {
       reaction_or_humor: 'Kafa dağıtmalık mizah, skeç veya oyun içeriği; bilgi beklentisi olmadan keyfî izlenebilir.',
       default: 'Vakit geçirme ve kafa dinleme amaçlı eğlence içeriği.'
@@ -70,6 +178,20 @@ export const VERDICTS = {
     subtitle: 'NÖTR',
     cssClass: 'stamp-other',
     pillClass: 'bir-cumle-pill-other',
+    tr: {
+      badge: 'BELİRSİZ',
+      subtitle: 'NÖTR',
+      reasons: {
+        default: 'Başlık ve açıklama, içeriğin değerini veya zaman maliyetini netleştirmek için çok genel veya belirsiz.'
+      }
+    },
+    en: {
+      badge: 'UNCERTAIN',
+      subtitle: 'NEUTRAL',
+      reasons: {
+        default: 'Title and metadata are too ambiguous to definitively determine cognitive time value.'
+      }
+    },
     reasons: {
       default: 'Başlık ve açıklama, içeriğin değerini veya zaman maliyetini netleştirmek için çok genel veya belirsiz.'
     }
@@ -81,7 +203,46 @@ export const CONSENSUS_BADGES = {
   mixed_feedback: 'İzleyiciler: Kararsız / Yüzeysel 🤔',
   positive_valuable: 'İzleyiciler: Çok Faydalı 👍',
   casual_chitchat: 'İzleyiciler: Eğlencelik 🍿',
-  no_comments: 'Yorum Verisi Yok'
+  no_comments: 'Yorum Verisi Yok',
+  tr: {
+    negative_waste: 'İzleyiciler: Zaman Kaybı 👎',
+    mixed_feedback: 'İzleyiciler: Kararsız / Yüzeysel 🤔',
+    positive_valuable: 'İzleyiciler: Çok Faydalı 👍',
+    casual_chitchat: 'İzleyiciler: Eğlencelik 🍿',
+    no_comments: 'Yorum Verisi Yok'
+  },
+  en: {
+    negative_waste: 'Audience: Waste of Time 👎',
+    mixed_feedback: 'Audience: Mixed / Shallow 🤔',
+    positive_valuable: 'Audience: High Value 👍',
+    casual_chitchat: 'Audience: Casual / Fun 🍿',
+    no_comments: 'No Comments'
+  }
+};
+
+export const I18N = {
+  tr: {
+    loading: 'JEV TARTIYOR…',
+    wasteLabel: 'Atık',
+    wasteRisk: 'Atık Riski',
+    dislikeLabel: 'Dislike',
+    engineLabel: 'JEV DERİN RADAR',
+    commentsScan: 'YORUM & AÇIKLAMA ANALİZİ',
+    scanningComments: 'İzleyici yorumları, açıklama ve içerik taranıyor…',
+    highlightedComment: 'Öne Çıkan Yorum',
+    errorBadge: 'HATA'
+  },
+  en: {
+    loading: 'JEV EVALUATING…',
+    wasteLabel: 'Waste',
+    wasteRisk: 'Waste Risk',
+    dislikeLabel: 'Dislikes',
+    engineLabel: 'JEV DEEP RADAR',
+    commentsScan: 'COMMENTS & DESCRIPTION RADAR',
+    scanningComments: 'Scanning viewer comments, description and substance…',
+    highlightedComment: 'Top Viewer Comment',
+    errorBadge: 'ERROR'
+  }
 };
 
 const tidy = value => typeof value === 'string' ? value.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim() : '';
@@ -221,6 +382,19 @@ export function requestFor(video) {
           other: 'Ambiguous title or insufficient evidence.'
         }
       },
+      knowledge_density: {
+        type: 'choice',
+        instructions: 'What is the educational and analytical depth of this content?',
+        criteria: {
+          deep: 'Actionable knowledge, rigorous investigative journalism, engineering tutorial, or profound documentary',
+          moderate: 'Standard review, news summary, or informative presentation with some filler',
+          low: 'Personal lifestyle haul, unedited chat, drama gossip, room tour, or superficial product placement'
+        }
+      },
+      is_clickbait: {
+        type: 'noul',
+        instructions: 'What is the probability (0.0 to 1.0) that this video title uses deceptive framing, emotional panic, or clickbait hooks?'
+      },
       audience_consensus: {
         type: 'choice',
         instructions: 'What is the primary sentiment and consensus of the audience comments, description, and dislike metrics (if provided)?',
@@ -273,14 +447,19 @@ export function analysisFor(video, response, extra = {}) {
   const flawAns = answers.content_flaw;
   const wasteAns = answers.is_time_waste;
   const consensusAns = answers.audience_consensus;
+  const clickbaitAns = answers.is_clickbait;
+  const densityAns = answers.knowledge_density;
 
   const verdictKeys = ['stop', 'clickbait', 'valuable', 'entertainment', 'other'];
   const flawKeys = ['consumer_inventory', 'sensational_clickbait', 'reaction_or_humor', 'technical_guide', 'analytical_review', 'other'];
   const consensusKeys = ['negative_waste', 'mixed_feedback', 'positive_valuable', 'casual_chitchat', 'no_comments'];
+  const densityKeys = ['deep', 'moderate', 'low'];
 
   let verdict = validChoice(verdictAns, verdictKeys) ? verdictAns.choice : 'other';
   const flaw = validChoice(flawAns, flawKeys) ? flawAns.choice : 'other';
   const consensus = validChoice(consensusAns, consensusKeys) ? consensusAns.choice : 'no_comments';
+  const density = validChoice(densityAns, densityKeys) ? densityAns.choice : null;
+  const clickbaitNoul = validNoul(clickbaitAns) ? Math.round(clickbaitAns.noul * 100) : null;
   let waste = validNoul(wasteAns) ? Math.round(wasteAns.noul * 100) : null;
   const confidence = verdictAns?.confidence ?? 0;
 
@@ -292,10 +471,26 @@ export function analysisFor(video, response, extra = {}) {
   const dislikeCount = Number.isFinite(extra.dislikes) ? extra.dislikes : (Number.isFinite(video.dislikeCount) ? video.dislikeCount : null);
   const likeCount = Number.isFinite(extra.likes) ? extra.likes : (Number.isFinite(video.likeCount) ? video.likeCount : null);
 
+  // Dil tespiti ve seçimi (tr veya en)
+  const lang = (extra.lang === 'en' || video.lang === 'en') ? 'en' : 'tr';
+
   // Yorum konsensüsü negatifse veya atık oranı >= 65 ise kararı STOP'a yükselt
   if (consensus === 'negative_waste' && (verdict === 'other' || verdict === 'entertainment')) {
     verdict = 'stop';
   } else if (verdict === 'other' && waste !== null && waste >= 65) {
+    verdict = 'stop';
+  }
+
+  // Jev is_clickbait noul desteği:
+  if (clickbaitNoul !== null && clickbaitNoul >= 70 && (verdict === 'other' || verdict === 'entertainment')) {
+    verdict = 'clickbait';
+    if (waste === null || waste < 50) waste = 65;
+  }
+
+  // Jev knowledge_density desteği:
+  if (density === 'deep' && verdict === 'other' && (waste === null || waste < 35)) {
+    verdict = 'valuable';
+  } else if (density === 'low' && verdict === 'other' && heuristics.isHeuristicClickbait) {
     verdict = 'stop';
   }
 
@@ -319,14 +514,21 @@ export function analysisFor(video, response, extra = {}) {
   }
 
   const conf = VERDICTS[verdict] || VERDICTS.other;
+  const langConf = conf[lang] || conf.tr || conf;
 
   let text = '';
   if (dislikeRatio !== null && dislikeRatio >= 25 && consensus === 'no_comments') {
-    text = `Topluluk onaylamıyor: %${dislikeRatio} dislike oranı. İzleyiciler içeriği yanıltıcı, vaadini karşılamayan veya zaman kaybı olarak değerlendirdi.`;
+    text = langConf.dislikeReason
+      ? langConf.dislikeReason(dislikeRatio)
+      : (lang === 'en'
+          ? `Community rejection: ${dislikeRatio}% dislike ratio. Viewers flagged content as misleading or a waste of time.`
+          : `Topluluk onaylamıyor: %${dislikeRatio} dislike oranı. İzleyiciler içeriği yanıltıcı, vaadini karşılamayan veya zaman kaybı olarak değerlendirdi.`);
+  } else if (langConf.consensusReasons && langConf.consensusReasons[consensus]) {
+    text = langConf.consensusReasons[consensus];
   } else if (conf.consensusReasons && conf.consensusReasons[consensus]) {
     text = conf.consensusReasons[consensus];
   } else {
-    text = conf.reasons[flaw] || conf.reasons.default;
+    text = langConf.reasons?.[flaw] || langConf.reasons?.default || conf.reasons[flaw] || conf.reasons.default;
   }
 
   let topQuote = null;
@@ -335,17 +537,26 @@ export function analysisFor(video, response, extra = {}) {
     if (video.comments[0].length > 120) topQuote += '…';
   }
 
+  const badge = langConf.badge || conf.badge;
+  const subtitle = langConf.subtitle || conf.subtitle;
+  const consensusBadge = (consensus && consensus !== 'no_comments')
+    ? (CONSENSUS_BADGES[lang]?.[consensus] || CONSENSUS_BADGES[consensus] || null)
+    : null;
+
   return {
     verdict,
-    badge: conf.badge,
-    subtitle: conf.subtitle,
+    lang,
+    badge,
+    subtitle,
     cssClass: conf.cssClass,
     pillClass: conf.pillClass,
     consensus,
-    consensusBadge: (consensus && consensus !== 'no_comments') ? (CONSENSUS_BADGES[consensus] || null) : null,
+    consensusBadge,
     text,
     waste,
     confidence,
+    clickbaitProbability: clickbaitNoul,
+    knowledgeDensity: density,
     topQuote,
     duration: video.duration || null,
     dislikeRatio,

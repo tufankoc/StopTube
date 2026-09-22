@@ -16,20 +16,29 @@ Modern video platformlarının algoritmaları, kullanıcının **zihinsel geliş
 
 ---
 
-## 🎯 5 Bilişsel Karar Sınıfı (Verdicts)
+## 🎯 5 Bilişsel Karar Sınıfı (Verdicts) & Çift Dilli Damgalar (TR / EN)
 
-| Karar Damgası | Renk / Stil | Anlamı ve İçerik Türü | Davranış |
+Popup üzerindeki **TR / EN** dil anahtarı ile tüm damgalar, rozetler ve izleme panelleri anında yerelleşir:
+
+| Karar Damgası (TR / EN) | Renk / Stil | Anlamı ve İçerik Türü | Davranış |
 | :--- | :--- | :--- | :--- |
-| **🛑 STOP · ZAMAN KAYBI** | Derin Kırmızı Radyal | Kişisel eşya vitrinleri, bavul/oda turları, somut bilgi içermeyen rutin vloglar ve vakit hırsızı içerikler. | Görseli blurlar, merkezde net teşhis metni ve atık oranı (%) gösterir. |
-| **⚠️ TIK TUZAĞI · DİKKAT** | Kehribar / Turuncu | Abartılı merak yemi, panik dili, başlık ile içerik vaadi uyuşmayan clickbait videolar. | Orta derece blur ve tık tuzağı uyarısı basar. |
-| **✦ İZLENİR · DEĞERLİ** | Zümrüt Cam Rozet | Yüksek bilgi yoğunluğuna sahip belgeseller, derin teknik rehberler ve analitik incelemeler. | Görseli bozmaz; sol üstte şık, yarı saydam bir zümrüt rozet yerleştirir. |
-| **✦ EĞLENCE · KEYFÎ** | Mor / Ametist Rozet | Kafa dağıtmalık mizah, skeç, oyun veya rahatlatıcı içerikler (bilgi iddiası olmayan). | Görseli bozmaz; sol üstte minimalist mor rozet basar. |
-| **✦ BELİRSİZ · NÖTR** | Duman / Gri Cam Rozet | Başlık veya bağlamdan içerik kalitesi netleştirilemeyen nötr videolar. | Görseli karartmaz; sol üstte zarif duman rozetiyle tarafsız kalır. |
+| **🛑 STOP · ZAMAN KAYBI**<br>`STOP · TIME WASTE` | Derin Kırmızı Radyal | Kişisel eşya vitrinleri, bavul/oda turları, somut bilgi içermeyen rutin vloglar ve vakit hırsızı içerikler. | Görseli blurlar, merkezde net teşhis metni ve atık oranı (%) gösterir. |
+| **⚠️ TIK TUZAĞI · DİKKAT**<br>`CLICKBAIT · CAUTION` | Kehribar / Turuncu | Abartılı merak yemi, panik dili, başlık ile içerik vaadi uyuşmayan clickbait videolar. | Orta derece blur ve tık tuzağı uyarısı basar. |
+| **✦ İZLENİR · DEĞERLİ**<br>`VALUABLE · WORTH IT` | Zümrüt Cam Rozet | Yüksek bilgi yoğunluğuna sahip belgeseller, derin teknik rehberler ve analitik incelemeler. | Görseli bozmaz; sol üstte şık, yarı saydam bir zümrüt rozet yerleştirir. |
+| **✦ EĞLENCE · KEYFÎ**<br>`ENTERTAINMENT` | Mor / Ametist Rozet | Kafa dağıtmalık mizah, skeç, oyun veya rahatlatıcı içerikler (bilgi iddiası olmayan). | Görseli bozmaz; sol üstte minimalist mor rozet basar. |
+| **✦ BELİRSİZ · NÖTR**<br>`UNCERTAIN` | Duman / Gri Cam Rozet | Başlık veya bağlamdan içerik kalitesi netleştirilemeyen nötr videolar. | Görseli karartmaz; sol üstte zarif duman rozetiyle tarafsız kalır. |
 
 ---
 
 ## ✨ Öne Çıkan Özellikler
 
+* **🌍 Çift Dilli Tam Destek (TR & EN):** Tek tıkla Türkçe veya İngilizce arayüze ve karar damgalarına geçiş. Tüm rozetler, teşhis metinleri ve uyarılar anında seçilen dile bürünür.
+* **⚡ Sıfır Sayfa Yenileme ile Anında Başlama (Zero-Reload Onboarding):** Popup'a API anahtarınızı girip "Kaydet" dediğiniz anda açık tüm YouTube sekmeleri anında uyanır; sayfayı manuel yenilemeye gerek kalmadan vitrindeki videoları taramaya ve damgalamaya başlar.
+* **🧠 Gelişmiş TypeSafe Jev System One Soru Matrisi:**
+  - `verdict` (Kategorik karar)
+  - `is_time_waste` (0.0 - 1.0 aralığında sürekli bilişsel atık olasılığı - noul)
+  - `is_clickbait` (0.0 - 1.0 aldatıcı başlık ve merak yemi olasılığı - noul)
+  - `knowledge_density` (İçerik bilgi yoğunluğu: `deep`, `moderate`, `low` - choice)
 * **🖼️ Küçük Resim Üzeri Doğrudan Teşhis (Thumbnail Overlay):** Harici kutular veya sayfa düzenini bozan bloklar yok. Her şey doğrudan YouTube küçük resminin üzerinde entegre çalışır.
 * **👁️ Hover-to-Reveal (Kusursuz İnceleme):** Blurlanmış bir STOP videosunun üzerine fareyle geldiğinizde overlay anında kaybolur (`opacity: 0`), blur sıfırlanır ve YouTube'un hareketli video önizlemesi pürüzsüzce görünür.
 * **👎 Return YouTube Dislike (RYD) API Entegrasyonu:** Topluluğun gerçek tepkisini doğrudan hesaba katar. Dislike oranı %25'i aşan videolar doğrudan STOP/Tık Tuzağı olarak damgalanır (`👎 %35 Dislike`).
@@ -39,7 +48,7 @@ Modern video platformlarının algoritmaları, kullanıcının **zihinsel geliş
 * **🌐 Tüm YouTube Sayfalarında Aktif:** Yalnızca ana sayfa değil; arama sonuçları, `/feed/subscriptions` (Abonelikler), kanal sayfaları (`/videos`) ve öneri sütunlarında kesintisiz çalışır.
 * **💾 Akıllı Oturum ve Kalıcı Bellek:** TypeSafe API anahtarını ister sadece oturum süresince tutun, ister "Bu tarayıcıda hatırla" seçeneğiyle kalıcı olarak güvenle saklayın.
 * **⚡ 30 Günlük Kalıcı Yerel Önbellek (0 ms Refleks / LRU 2500):** Daha önce taranan videolar yerel belleğe alınır; aynı video için tekrar tekrar API çağrısı yapılmaz, kota ve token israfı önlenir.
-* **🧪 23/23 Otomatik Test Kapsamı:** Node.js native test runner ile tüm fonksiyonlar, regex'ler, önbellek akışı ve manifest sözleşmeleri 70ms içinde doğrulanır.
+* **🧪 27/27 Otomatik Test Kapsamı:** Node.js native test runner ile tüm fonksiyonlar, i18n çevirileri, heuristikler, önbellek akışı ve manifest sözleşmeleri 60ms içinde doğrulanır.
 
 ---
 
@@ -57,8 +66,7 @@ Bu eklenti Chrome Web Store gerektirmeden doğrudan **Geliştirici Modu (Develop
 3. Sağ üst köşedeki **Geliştirici Modu (Developer Mode)** anahtarını açın.
 4. Sol üstteki **Paketlenmemiş Öğe Yükle (Load Unpacked)** butonuna tıklayın.
 5. Klonladığınız klasörü seçin.
-6. Tarayıcı araç çubuğundaki 🛑 simgesine tıklayın, [TypeSafe](https://typesafe.ai) API anahtarınızı girin ve **"Kaydet ve Radarı Başlat"** butonuna basın.
-7. YouTube sekmenizi yenileyin ve bilişsel kalkanın tadını çıkarın!
+6. Tarayıcı araç çubuğundaki 🛑 simgesine tıklayın, [TypeSafe](https://typesafe.ai) API anahtarınızı girin ve **"Kaydet ve Radarı Başlat"** butonuna basın. Açık YouTube sekmeleriniz anında taranmaya başlar!
 
 ---
 

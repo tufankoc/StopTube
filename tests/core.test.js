@@ -360,3 +360,82 @@ test('fetchDislikeStats: API yanıtını doğru oranla ayrıştırır ve hatalar
   assert.equal(await fetchDislikeStats(''), null);
 });
 
+test('analysisFor (İngilizce Dil Desteği): lang="en" iken İngilizce damga, rozet ve teşhis metinleri üretir', () => {
+  const video = { id: 'dQw4w9WgXcQ', title: 'Room Tour 2026', channel: 'Vlog' };
+  const mockJevResponse = {
+    answers: {
+      verdict: { type: 'choice', choice: 'stop', confidence: 0.94 },
+      content_flaw: { type: 'choice', choice: 'consumer_inventory', confidence: 0.9 },
+      audience_consensus: { type: 'choice', choice: 'negative_waste', confidence: 0.88 },
+      is_time_waste: { type: 'noul', noul: 0.82 }
+    }
+  };
+
+  const res = analysisFor(video, mockJevResponse, { lang: 'en' });
+  assert.equal(res.verdict, 'stop');
+  assert.equal(res.badge, 'STOP');
+  assert.equal(res.subtitle, 'TIME WASTE');
+  assert.equal(res.consensusBadge, 'Audience: Waste of Time 👎');
+  assert.ok(res.text.includes('Personal gear showcase') || res.text.includes('Sponsored product showcase'));
+
+  // Valuable test in English
+  const valVideo = { id: 'dQw4w9WgXcQ', title: 'Quantum Computing Explained', channel: 'Science' };
+  const valResponse = {
+    answers: {
+      verdict: { type: 'choice', choice: 'valuable', confidence: 0.95 },
+      content_flaw: { type: 'choice', choice: 'analytical_review', confidence: 0.9 },
+      audience_consensus: { type: 'choice', choice: 'positive_valuable', confidence: 0.9 },
+      is_time_waste: { type: 'noul', noul: 0.08 }
+    }
+  };
+  const valRes = analysisFor(valVideo, valResponse, { lang: 'en' });
+  assert.equal(valRes.badge, 'VALUABLE');
+  assert.equal(valRes.subtitle, 'MUST WATCH');
+  assert.equal(valRes.consensusBadge, 'Audience: High Value 👍');
+});
+
+test('requestFor: is_clickbait (noul) ve knowledge_density (choice) sorularını içerir', () => {
+  const video = { id: 'dQw4w9WgXcQ', title: 'Advanced Systems', channel: 'Tech' };
+  const req = requestFor(video);
+  assert.ok(req.questions.is_clickbait, 'is_clickbait sorusu bulunmalı');
+  assert.equal(req.questions.is_clickbait.type, 'noul');
+  assert.ok(req.questions.knowledge_density, 'knowledge_density sorusu bulunmalı');
+  assert.equal(req.questions.knowledge_density.type, 'choice');
+});
+
+test('analysisFor: is_clickbait noul >= %70 olduğunda tık tuzağına yükseltir', () => {
+  const video = { id: 'dQw4w9WgXcQ', title: 'Sıradan Bir Başlık', channel: 'Test' };
+  const mockJevResponse = {
+    answers: {
+      verdict: { type: 'choice', choice: 'other', confidence: 0.4 },
+      content_flaw: { type: 'choice', choice: 'other', confidence: 0.4 },
+      audience_consensus: { type: 'choice', choice: 'no_comments', confidence: 0.5 },
+      is_time_waste: { type: 'noul', noul: 0.4 },
+      is_clickbait: { type: 'noul', noul: 0.85 } // %85 tık tuzağı
+    }
+  };
+
+  const res = analysisFor(video, mockJevResponse);
+  assert.equal(res.verdict, 'clickbait', 'Yüksek is_clickbait noul kararı clickbait yapmalı');
+  assert.equal(res.badge, 'TIK TUZAĞI');
+  assert.ok(res.waste >= 65);
+});
+
+test('analysisFor: knowledge_density="deep" ve düşük atık riskinde nötr kararı VALUABLE yapar', () => {
+  const video = { id: 'dQw4w9WgXcQ', title: 'Karmaşık Dağıtık Sistemler Mimarisi', channel: 'Mühendislik' };
+  const mockJevResponse = {
+    answers: {
+      verdict: { type: 'choice', choice: 'other', confidence: 0.4 },
+      content_flaw: { type: 'choice', choice: 'technical_guide', confidence: 0.7 },
+      audience_consensus: { type: 'choice', choice: 'no_comments', confidence: 0.5 },
+      is_time_waste: { type: 'noul', noul: 0.15 },
+      knowledge_density: { type: 'choice', choice: 'deep', confidence: 0.9 }
+    }
+  };
+
+  const res = analysisFor(video, mockJevResponse);
+  assert.equal(res.verdict, 'valuable', 'Derin bilgi yoğunluğu kararı VALUABLE yapmalı');
+  assert.equal(res.badge, 'İZLENİR');
+});
+
+

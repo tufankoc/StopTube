@@ -28,7 +28,7 @@ async function slot(fn) {
 
 async function status() {
   const [local, session] = await Promise.all([
-    chrome.storage.local.get({ enabled: true, apiKey: '', rememberKey: true, persistentCache: {} }),
+    chrome.storage.local.get({ enabled: true, apiKey: '', rememberKey: true, lang: 'tr', persistentCache: {} }),
     chrome.storage.session.get({ apiKey: '', calls: 0 })
   ]);
   const activeKey = session.apiKey || (local.rememberKey !== false ? local.apiKey : '');
@@ -37,6 +37,7 @@ async function status() {
     enabled: local.enabled !== false,
     configured: !!activeKey,
     rememberKey: local.rememberKey !== false,
+    lang: local.lang || 'tr',
     calls: session.calls || 0,
     cached: cachedCount
   };
@@ -51,9 +52,11 @@ async function analyze(video, isWatch = false) {
   if (pending.size >= 32) throw new Error('İstek kuyruğu dolu; biraz sonra tekrar dene.');
 
   const task = slot(async () => {
+    let currentLang = 'tr';
     const ticket = await lock(async () => {
       const current = await status();
-      if (!current.enabled) throw new Error('Radar duraklatıldı.');
+      currentLang = current.lang || 'tr';
+      if (!current.enabled) throw new Error(currentLang === 'en' ? 'Radar is paused.' : 'Radar duraklatıldı.');
       const [saved, local] = await Promise.all([
         chrome.storage.session.get({
           apiKey: '',
@@ -61,10 +64,10 @@ async function analyze(video, isWatch = false) {
           cooldown: 0,
           calls: 0
         }),
-        chrome.storage.local.get({ apiKey: '', rememberKey: true, persistentCache: {} })
+        chrome.storage.local.get({ apiKey: '', rememberKey: true, lang: 'tr', persistentCache: {} })
       ]);
       const effectiveKey = saved.apiKey || (local.rememberKey !== false ? local.apiKey : '');
-      if (!effectiveKey) throw new Error('Eklenti simgesinden API anahtarını gir.');
+      if (!effectiveKey) throw new Error(currentLang === 'en' ? 'Please enter your API key in extension settings.' : 'Eklenti simgesinden API anahtarını gir.');
 
       const cache = local.persistentCache || {};
       const hit = cache[videoId];
@@ -80,12 +83,12 @@ async function analyze(video, isWatch = false) {
       }
 
       // Yeni video veya yorum zenginleştirmesi için Jev çağrısı
-      if (saved.cooldown > Date.now()) throw new Error('Jev kısa bir molada; bir dakika sonra tekrar dene.');
+      if (saved.cooldown > Date.now()) throw new Error(currentLang === 'en' ? 'Jev is resting; try again in a minute.' : 'Jev kısa bir molada; bir dakika sonra tekrar dene.');
       const rate = Date.now() - saved.rate.start >= 60000 ? { start: Date.now(), count: 0 } : saved.rate;
-      if (rate.count >= 24) throw new Error('Dakikalık 24 istek sınırına ulaşıldı.');
+      if (rate.count >= 24) throw new Error(currentLang === 'en' ? 'Rate limit of 24 requests per minute reached.' : 'Dakikalık 24 istek sınırına ulaşıldı.');
       rate.count++;
       await chrome.storage.session.set({ rate, calls: saved.calls + 1 });
-      return { key: effectiveKey, revision, isEnrich: (isWatch && !!hit) };
+      return { key: effectiveKey, revision, isEnrich: (isWatch && !!hit), lang: currentLang };
     });
 
     if (ticket.analysis) return { ...ticket.analysis, cached: true };
@@ -99,7 +102,7 @@ async function analyze(video, isWatch = false) {
 
     let analysis;
     try {
-      analysis = await evaluate(video, ticket.key, fetch, dislikeData || {});
+      analysis = await evaluate(video, ticket.key, fetch, { ...(dislikeData || {}), lang: ticket.lang || currentLang });
     } catch (error) {
       if ([401, 403, 429, 500, 502, 503, 529].includes(error.code)) {
         await lock(async () => {
@@ -156,7 +159,7 @@ async function handle(message, sender) {
 
   if (message?.type === 'save') {
     if (typeof message.key !== 'string' || message.key.trim().length < 8 || message.key.length > 2048 || /[\r\n]/.test(message.key)) {
-      throw new Error('Geçerli bir API anahtarı gir.');
+      throw new Error(message.lang === 'en' ? 'Please enter a valid API key.' : 'Geçerli bir API anahtarı gir.');
     }
     const cleanKey = message.key.trim();
     const remember = message.remember !== false;
@@ -165,11 +168,35 @@ async function handle(message, sender) {
       await chrome.storage.session.set({ apiKey: cleanKey, cooldown: 0 });
       await chrome.storage.local.set({ enabled: true, rememberKey: remember, apiKey: remember ? cleanKey : '' });
     });
+
+    // Notify all active YouTube tabs so user immediately sees results on their active tab without manual reload
+    chrome.tabs?.query({ url: '*://*.youtube.com/*' }, tabs => {
+      for (const tab of (tabs || [])) {
+        if (tab.id) chrome.tabs.sendMessage(tab.id, { type: 'activated' }).catch(() => {});
+      }
+    });
+
+    return status();
+  }
+
+  if (message?.type === 'set_lang') {
+    const lang = message.lang === 'en' ? 'en' : 'tr';
+    await chrome.storage.local.set({ lang });
+    chrome.tabs?.query({ url: '*://*.youtube.com/*' }, tabs => {
+      for (const tab of (tabs || [])) {
+        if (tab.id) chrome.tabs.sendMessage(tab.id, { type: 'rescan', lang }).catch(() => {});
+      }
+    });
     return status();
   }
 
   if (message?.type === 'toggle') {
     await chrome.storage.local.set({ enabled: message.enabled === true });
+    chrome.tabs?.query({ url: '*://*.youtube.com/*' }, tabs => {
+      for (const tab of (tabs || [])) {
+        if (tab.id) chrome.tabs.sendMessage(tab.id, { type: 'activated' }).catch(() => {});
+      }
+    });
     return status();
   }
 

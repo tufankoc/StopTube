@@ -1,7 +1,7 @@
 (() => {
   const CARDS = 'ytd-rich-item-renderer, ytd-grid-video-renderer, ytd-video-renderer, ytd-compact-video-renderer, yt-lockup-view-model, ytd-rich-grid-media';
   const records = new Map();
-  let enabled = false, scanTimer, stopped = false;
+  let enabled = false, scanTimer, stopped = false, lang = 'tr';
   let watchRecord = null, commentsObserver = null;
 
   const allowed = () => {
@@ -94,7 +94,8 @@
       const loadOverlay = document.createElement('div');
       loadOverlay.className = 'bir-cumle-thumb-overlay bir-cumle-thumb-loading';
       loadOverlay.setAttribute('aria-hidden', 'true');
-      loadOverlay.innerHTML = `<span class="bir-cumle-thumb-loading-badge">JEV TARTIYOR…</span>`;
+      const loadText = lang === 'en' ? 'JEV EVALUATING…' : 'JEV TARTIYOR…';
+      loadOverlay.innerHTML = `<span class="bir-cumle-thumb-loading-badge">${loadText}</span>`;
       thumb.style.setProperty('position', 'relative', 'important');
       thumb.style.setProperty('overflow', 'hidden', 'important');
       thumb.style.setProperty('border-radius', '12px', 'important');
@@ -115,7 +116,9 @@
     if (data.verdict === 'entertainment') icon = '✦';
     if (data.verdict === 'other') icon = '✦';
 
-    const wasteHtml = data.waste !== null ? `<span class="bir-cumle-thumb-waste">Atık: %${data.waste}</span>` : '';
+    const isEn = data.lang === 'en' || lang === 'en';
+    const wasteLabel = isEn ? 'Waste' : 'Atık';
+    const wasteHtml = data.waste !== null ? `<span class="bir-cumle-thumb-waste">${wasteLabel}: %${data.waste}</span>` : '';
     const dislikeHtml = (typeof data.dislikeRatio === 'number' && data.dislikeRatio >= 15)
       ? `<span class="bir-cumle-thumb-dislike ${data.dislikeRatio >= 25 ? 'dislike-alert' : ''}">👎 %${data.dislikeRatio}</span>`
       : '';
@@ -264,15 +267,19 @@
   }
 
   function renderWatchBanner(banner, response, error = false, loading = false) {
+    const isEn = lang === 'en';
     if (loading) {
       banner.dataset.state = 'loading';
+      const badgeText = isEn ? 'COGNITIVE RADAR' : 'BİLİŞSEL RADAR';
+      const engineSub = isEn ? 'COMMENTS & DESCRIPTION RADAR' : 'YORUM & AÇIKLAMA ANALİZİ';
+      const loadingText = isEn ? 'Scanning viewer comments, description and cognitive value…' : 'İzleyici yorumları, açıklama ve içerik taranıyor…';
       banner.innerHTML = `
         <div class="bir-cumle-watch-inner">
           <div class="bir-cumle-watch-header">
-            <span class="bir-cumle-pill bir-cumle-pill-loading">BİLİŞSEL RADAR</span>
-            <span class="bir-cumle-engine">YORUM & AÇIKLAMA ANALİZİ</span>
+            <span class="bir-cumle-pill bir-cumle-pill-loading">${badgeText}</span>
+            <span class="bir-cumle-engine">${engineSub}</span>
           </div>
-          <p class="bir-cumle-watch-text">İzleyici yorumları, açıklama ve içerik taranıyor…</p>
+          <p class="bir-cumle-watch-text">${loadingText}</p>
         </div>
       `;
       return;
@@ -280,12 +287,13 @@
 
     if (error) {
       banner.dataset.state = 'error';
+      const errBadge = isEn ? 'ERROR' : 'HATA';
       banner.innerHTML = `
         <div class="bir-cumle-watch-inner">
           <div class="bir-cumle-watch-header">
-            <span class="bir-cumle-pill bir-cumle-pill-error">HATA</span>
+            <span class="bir-cumle-pill bir-cumle-pill-error">${errBadge}</span>
           </div>
-          <p class="bir-cumle-watch-text">${typeof response === 'string' ? response : (response?.error || 'Analiz yapılamadı.')}</p>
+          <p class="bir-cumle-watch-text">${typeof response === 'string' ? response : (response?.error || (isEn ? 'Analysis failed.' : 'Analiz yapılamadı.'))}</p>
         </div>
       `;
       return;
@@ -299,12 +307,17 @@
     if (response.verdict === 'valuable') icon = '💡';
     if (response.verdict === 'entertainment') icon = '🍿';
 
-    const wasteHtml = response.waste !== null ? `<span class="bir-cumle-waste-pill ${response.waste >= 65 ? 'waste-high' : response.waste <= 30 ? 'waste-low' : 'waste-mid'}">Atık Riski: %${response.waste}</span>` : '';
+    const respEn = response.lang === 'en' || isEn;
+    const wastePrefix = respEn ? 'Waste Risk' : 'Atık Riski';
+    const engineTitle = respEn ? 'JEV DEEP RADAR' : 'JEV DERİN RADAR';
+    const quoteTitle = respEn ? '💬 Top Viewer Comment:' : '💬 Öne Çıkan Yorum:';
+
+    const wasteHtml = response.waste !== null ? `<span class="bir-cumle-waste-pill ${response.waste >= 65 ? 'waste-high' : response.waste <= 30 ? 'waste-low' : 'waste-mid'}">${wastePrefix}: %${response.waste}</span>` : '';
     const dislikeHtml = (typeof response.dislikeRatio === 'number' && response.dislikeRatio >= 10)
       ? `<span class="bir-cumle-dislike-pill ${response.dislikeRatio >= 25 ? 'dislike-high' : ''}">👎 %${response.dislikeRatio} Dislike</span>`
       : '';
     const consensusHtml = response.consensusBadge ? `<span class="bir-cumle-consensus-pill">${response.consensusBadge}</span>` : '';
-    const quoteHtml = response.topQuote ? `<div class="bir-cumle-watch-quote"><span>💬 Öne Çıkan Yorum:</span> <i>"${response.topQuote}"</i></div>` : '';
+    const quoteHtml = response.topQuote ? `<div class="bir-cumle-watch-quote"><span>${quoteTitle}</span> <i>"${response.topQuote}"</i></div>` : '';
 
     banner.innerHTML = `
       <div class="bir-cumle-watch-inner">
@@ -315,7 +328,7 @@
             ${dislikeHtml}
             ${consensusHtml}
           </div>
-          <span class="bir-cumle-engine">JEV DERİN RADAR</span>
+          <span class="bir-cumle-engine">${engineTitle}</span>
         </div>
         <p class="bir-cumle-watch-text">${response.text}</p>
         ${quoteHtml}
@@ -372,10 +385,10 @@
       }
     }
 
-    const sig = JSON.stringify({ id: videoId, title, descLen: description.length, commentCount: comments.length, duration });
+    const sig = JSON.stringify({ id: videoId, title, descLen: description.length, commentCount: comments.length, duration, lang });
     if (watchRecord?.sig === sig) return;
 
-    const video = { id: videoId, title, channel, description, comments, duration };
+    const video = { id: videoId, title, channel, description, comments, duration, lang };
     watchRecord = { video, banner, sig, running: false, done: false };
     runWatchAnalysis(video, banner);
 
@@ -403,8 +416,23 @@
     if (stopped || document.hidden) return;
     const state = await send({ type: 'status' });
     enabled = state.ok && state.enabled && state.configured;
+    if (state.lang) lang = state.lang;
     scan();
   }
+
+  // Real-time notification from popup (immediate card analysis upon saving key)
+  try {
+    chrome.runtime.onMessage?.addListener(message => {
+      if (message?.type === 'activated' || message?.type === 'rescan') {
+        if (message.lang) lang = message.lang;
+        refresh();
+      }
+    });
+
+    chrome.storage?.onChanged?.addListener(() => {
+      refresh();
+    });
+  } catch {}
 
   new MutationObserver(schedule).observe(document.documentElement, {
     childList: true,
