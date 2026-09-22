@@ -19,6 +19,9 @@ test('Manifest V3 Bütünlüğü: manifest.json geçerli ve tüm dosyalar diskte
   assert.ok(manifest.name, 'name alanı tanımlı olmalı');
   assert.ok(manifest.version, 'version alanı tanımlı olmalı');
   assert.ok(manifest.permissions.includes('storage'), 'storage izni bulunmalı');
+  assert.ok(manifest.host_permissions.includes('https://api.typesafe.ai/*'), 'TypeSafe API izni bulunmalı');
+  assert.ok(manifest.host_permissions.includes('https://returnyoutubedislikeapi.com/*'), 'Return YouTube Dislike API izni bulunmalı');
+  assert.ok(manifest.content_security_policy.extension_pages.includes('https://returnyoutubedislikeapi.com'), 'CSP RYD domainini içermeli');
 
   // Background script kontrolü
   const bgScript = path.join(rootDir, manifest.background.service_worker);

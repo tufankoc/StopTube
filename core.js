@@ -86,14 +86,99 @@ export const CONSENSUS_BADGES = {
 
 const tidy = value => typeof value === 'string' ? value.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim() : '';
 
+function normTurkish(str) {
+  return str
+    .replace(/İ/g, 'i')
+    .replace(/I/g, 'ı')
+    .toLocaleLowerCase('tr-TR')
+    .replace(/ı/g, 'i')
+    .replace(/ç/g, 'c')
+    .replace(/ğ/g, 'g')
+    .replace(/ö/g, 'o')
+    .replace(/ş/g, 's')
+    .replace(/ü/g, 'u');
+}
+
+export function computeClickbaitHeuristics(title) {
+  if (typeof title !== 'string' || !title.trim()) {
+    return { clickbaitScore: 0, triggers: [], isCapsHeavy: false, hasPunctuationTrap: false, isHeuristicClickbait: false, capsRatio: 0 };
+  }
+
+  const clean = title.trim();
+  const normalized = normTurkish(clean);
+  const triggers = [];
+
+  // 1. Sansasyonel ve Tık Tuzağı Anahtar Kelimeler (TR & EN normalize edilmiş)
+  const KEYWORD_PATTERNS = [
+    { pattern: /\b(sok|shocking)\b/, name: 'Şok' },
+    { pattern: /\b(inanilmaz|unbelievable)\b/, name: 'İnanılmaz' },
+    { pattern: /\b(ifsa|exposed)\b/, name: 'İfşa' },
+    { pattern: /\b(agladi|cildirdi|delirdi)\b/, name: 'Duygu Sömürüsü' },
+    { pattern: /\b(sakin|don't watch)\b/, name: 'Uyarı Yemi' },
+    { pattern: /\b(hayatim degisti|changed my life)\b/, name: 'Abartı' },
+    { pattern: /\b(kimse|nobody knows|secret revealed|gizli gercek)\b/, name: 'Gizem Yemi' },
+    { pattern: /\b(tum gercek|tüm gerçek)\b/, name: 'Tüm Gerçekler' },
+    { pattern: /\b(bomba|flas|son dakika)\b/, name: 'Suni Aciliyet' },
+    { pattern: /\b(mucize|pisman|yasaklandi)\b/, name: 'Sansasyonel' },
+    { pattern: /\b(you won't believe|gone wrong)\b/, name: 'Clickbait Kalıbı' }
+  ];
+
+  for (const { pattern, name } of KEYWORD_PATTERNS) {
+    if (pattern.test(normalized)) {
+      triggers.push(name);
+    }
+  }
+
+  // 2. Noktalama Tuzakları (örn: ???, !!!, ?!, !?)
+  const hasPunctuationTrap = /(\?{2,}|!{2,}|\?!|!\?)/.test(clean);
+  if (hasPunctuationTrap) {
+    triggers.push('Aşırı Noktalama');
+  }
+
+  // 3. Büyük Harf (CAPS) Oranı
+  const letters = clean.match(/[a-zA-ZçÇğĞıİöÖşŞüÜ]/g) || [];
+  let isCapsHeavy = false;
+  let capsRatio = 0;
+
+  if (letters.length >= 8) {
+    const upperCount = letters.filter(c => c === c.toUpperCase() && c !== c.toLowerCase()).length;
+    capsRatio = upperCount / letters.length;
+    if (capsRatio >= 0.55) {
+      isCapsHeavy = true;
+      triggers.push(capsRatio >= 0.85 ? 'TAMAMI BÜYÜK HARF' : 'Aşırı Büyük Harf');
+    }
+  }
+
+  // 4. Deterministik tık tuzağı skoru hesaplama (0 - 100)
+  let score = 0;
+  if (isCapsHeavy) score += capsRatio >= 0.85 ? 40 : 25;
+  if (hasPunctuationTrap) score += 20;
+  const keywordCount = triggers.filter(t => t !== 'Aşırı Noktalama' && t !== 'TAMAMI BÜYÜK HARF' && t !== 'Aşırı Büyük Harf').length;
+  score += Math.min(45, keywordCount * 25);
+
+  score = Math.min(100, Math.max(0, score));
+
+  return {
+    clickbaitScore: score,
+    isHeuristicClickbait: score >= 50,
+    triggers: [...new Set(triggers)],
+    capsRatio: Math.round(capsRatio * 100)
+  };
+}
+
 export function cleanVideo(value) {
   if (!value || !/^[A-Za-z0-9_-]{11}$/.test(value.id) || !tidy(value.title)) return null;
+  const duration = (typeof value.duration === 'string' && value.duration.trim()) ? tidy(value.duration).slice(0, 20) : null;
   return {
     id: value.id,
     title: tidy(value.title).slice(0, 240),
     channel: tidy(value.channel).slice(0, 100),
     description: tidy(value.description || '').slice(0, 500),
-    comments: Array.isArray(value.comments) ? value.comments.map(tidy).filter(c => c.length > 3).slice(0, 8) : []
+    comments: Array.isArray(value.comments) ? value.comments.map(tidy).filter(c => c.length > 3).slice(0, 8) : [],
+    duration: duration || null,
+    dislikeRatio: Number.isFinite(value.dislikeRatio) ? value.dislikeRatio : null,
+    dislikeCount: Number.isFinite(value.dislikeCount) ? value.dislikeCount : null,
+    likeCount: Number.isFinite(value.likeCount) ? value.likeCount : null
   };
 }
 
@@ -102,11 +187,23 @@ export function requestFor(video) {
     title: video.title,
     channel: video.channel
   };
+  if (video.duration) {
+    state.duration = video.duration;
+  }
+  if (video.dislikeRatio !== null && video.dislikeRatio !== undefined) {
+    state.dislike_percentage = `${video.dislikeRatio}%`;
+  }
   if (video.description && video.description.length > 10) {
     state.description = video.description;
   }
   if (Array.isArray(video.comments) && video.comments.length > 0) {
     state.comments = video.comments;
+  }
+
+  const heuristics = computeClickbaitHeuristics(video.title);
+  if (heuristics.clickbaitScore >= 40) {
+    state.clickbait_suspicion = `${heuristics.clickbaitScore}%`;
+    state.title_flags = heuristics.triggers;
   }
 
   return {
@@ -115,7 +212,7 @@ export function requestFor(video) {
     questions: {
       verdict: {
         type: 'choice',
-        instructions: 'Classify the cognitive time-value of this video based on its title and channel. Is this video a superficial time-waste/personal vlog/room tour, sensational clickbait trap, high-value documentary/educational guide, or casual comedy/entertainment?',
+        instructions: 'Classify the cognitive time-value of this video based on its title, channel, duration, and metrics. Is this video a superficial time-waste/personal vlog/room tour, sensational clickbait trap, high-value documentary/educational guide, or casual comedy/entertainment?',
         criteria: {
           stop: 'Superficial time-waste, personal vlog, room/dorm/house tour, packing haul, routine gear flex, shopping flex, or low-density filler that wastes viewer time.',
           clickbait: 'Misleading clickbait, artificial panic/urgency, or curiosity trap where content fails to deliver on the title promises.',
@@ -126,9 +223,9 @@ export function requestFor(video) {
       },
       audience_consensus: {
         type: 'choice',
-        instructions: 'What is the primary sentiment and consensus of the audience comments and description (if provided)?',
+        instructions: 'What is the primary sentiment and consensus of the audience comments, description, and dislike metrics (if provided)?',
         criteria: {
-          negative_waste: 'Audience calls out the video as a time waste, sponsored ad, or lacking promised substance',
+          negative_waste: 'Audience calls out the video as a time waste, sponsored ad, high dislikes, or lacking promised substance',
           mixed_feedback: 'Divided opinions, some finding casual value while others criticize lack of depth',
           positive_valuable: 'Audience praises the video as highly helpful, accurate, and informative',
           casual_chitchat: 'Casual reactions, jokes, off-topic questions, or neutral remarks',
@@ -170,7 +267,7 @@ function validNoul(answer) {
     answer.noul <= 1;
 }
 
-export function analysisFor(video, response) {
+export function analysisFor(video, response, extra = {}) {
   const answers = response?.answers || {};
   const verdictAns = answers.verdict;
   const flawAns = answers.content_flaw;
@@ -184,8 +281,16 @@ export function analysisFor(video, response) {
   let verdict = validChoice(verdictAns, verdictKeys) ? verdictAns.choice : 'other';
   const flaw = validChoice(flawAns, flawKeys) ? flawAns.choice : 'other';
   const consensus = validChoice(consensusAns, consensusKeys) ? consensusAns.choice : 'no_comments';
-  const waste = validNoul(wasteAns) ? Math.round(wasteAns.noul * 100) : null;
+  let waste = validNoul(wasteAns) ? Math.round(wasteAns.noul * 100) : null;
   const confidence = verdictAns?.confidence ?? 0;
+
+  // 1. Clickbait Heuristik Analizi
+  const heuristics = computeClickbaitHeuristics(video.title);
+
+  // 2. Dislike İstatistikleri (Return YouTube Dislike veya Video Meta)
+  const dislikeRatio = Number.isFinite(extra.dislikeRatio) ? extra.dislikeRatio : (Number.isFinite(video.dislikeRatio) ? video.dislikeRatio : null);
+  const dislikeCount = Number.isFinite(extra.dislikes) ? extra.dislikes : (Number.isFinite(video.dislikeCount) ? video.dislikeCount : null);
+  const likeCount = Number.isFinite(extra.likes) ? extra.likes : (Number.isFinite(video.likeCount) ? video.likeCount : null);
 
   // Yorum konsensüsü negatifse veya atık oranı >= 65 ise kararı STOP'a yükselt
   if (consensus === 'negative_waste' && (verdict === 'other' || verdict === 'entertainment')) {
@@ -194,10 +299,31 @@ export function analysisFor(video, response) {
     verdict = 'stop';
   }
 
+  // DISLIKE OVERRIDE:
+  // Eğer izleyicilerin %25'ten fazlası dislike vermişse, video bariz tık tuzağı veya zaman kaybıdır!
+  if (dislikeRatio !== null && dislikeRatio >= 25) {
+    if (verdict === 'valuable' || verdict === 'other' || verdict === 'entertainment') {
+      verdict = heuristics.isHeuristicClickbait ? 'clickbait' : 'stop';
+    }
+    const enforcedWaste = Math.min(95, Math.max(waste || 0, Math.round(dislikeRatio * 2.2)));
+    waste = enforcedWaste;
+  } else if (dislikeRatio !== null && dislikeRatio >= 15 && verdict === 'other') {
+    verdict = heuristics.isHeuristicClickbait ? 'clickbait' : 'stop';
+  }
+
+  // HEURISTIC OVERRIDE:
+  // Eğer başlık açıkça tık tuzağı formülüyse (skor >= 65) ve model 'other' demişse
+  if (heuristics.clickbaitScore >= 65 && (verdict === 'other' || verdict === 'entertainment')) {
+    verdict = 'clickbait';
+    if (waste === null || waste < 50) waste = 65;
+  }
+
   const conf = VERDICTS[verdict] || VERDICTS.other;
 
   let text = '';
-  if (conf.consensusReasons && conf.consensusReasons[consensus]) {
+  if (dislikeRatio !== null && dislikeRatio >= 25 && consensus === 'no_comments') {
+    text = `Topluluk onaylamıyor: %${dislikeRatio} dislike oranı. İzleyiciler içeriği yanıltıcı, vaadini karşılamayan veya zaman kaybı olarak değerlendirdi.`;
+  } else if (conf.consensusReasons && conf.consensusReasons[consensus]) {
     text = conf.consensusReasons[consensus];
   } else {
     text = conf.reasons[flaw] || conf.reasons.default;
@@ -221,11 +347,17 @@ export function analysisFor(video, response) {
     waste,
     confidence,
     topQuote,
-    hasAudienceFeedback: consensus !== 'no_comments'
+    duration: video.duration || null,
+    dislikeRatio,
+    dislikeCount,
+    likeCount,
+    clickbaitScore: heuristics.clickbaitScore,
+    clickbaitFlags: heuristics.triggers,
+    hasAudienceFeedback: consensus !== 'no_comments' || dislikeRatio !== null
   };
 }
 
-export async function evaluate(video, key, fetcher = fetch) {
+export async function evaluate(video, key, fetcher = fetch, extra = {}) {
   if (typeof key !== 'string' || !key.trim()) throw new Error('Önce API anahtarını gir.');
   const cleaned = cleanVideo(video);
   if (!cleaned) throw new Error('Video bilgisi okunamadı.');
@@ -270,5 +402,31 @@ export async function evaluate(video, key, fetcher = fetch) {
     throw new Error('Jev beklenen biçimde yanıt vermedi.');
   }
 
-  return analysisFor(cleaned, data);
+  return analysisFor(cleaned, data, extra);
 }
+
+export async function fetchDislikeStats(videoId, fetcher = fetch) {
+  if (!videoId || typeof videoId !== 'string') return null;
+  try {
+    const res = await fetcher(`https://returnyoutubedislikeapi.com/votes?videoId=${encodeURIComponent(videoId)}`, {
+      signal: AbortSignal.timeout(2200)
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (typeof data.dislikes === 'number' && typeof data.likes === 'number') {
+      const total = data.likes + data.dislikes;
+      const dislikeRatio = total > 0 ? Math.round((data.dislikes / total) * 100) : 0;
+      return {
+        likes: data.likes,
+        dislikes: data.dislikes,
+        dislikeRatio,
+        viewCount: data.viewCount ?? null
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+

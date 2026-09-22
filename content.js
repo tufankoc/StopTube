@@ -41,6 +41,19 @@
     return '';
   }
 
+  function extractDuration(card) {
+    const durEl = card.querySelector(
+      'ytd-thumbnail-overlay-time-status-renderer span#text, ' +
+      'span.ytd-thumbnail-overlay-time-status-renderer, ' +
+      '.badge-shape-wiz__text, ' +
+      '#time-status span'
+    );
+    if (!durEl) return null;
+    const raw = durEl.textContent || '';
+    const match = raw.match(/\b\d{1,2}(?::\d{2}){1,2}\b/);
+    return match ? match[0] : null;
+  }
+
   function metadata(card) {
     const anchor = card.querySelector('a#video-title, a#video-title-link, a.yt-lockup-metadata-view-model__title, h3 a[href*="/watch"]')
       || [...card.querySelectorAll('a[href*="/watch?v="]')].find(a => (a.getAttribute('title') || a.textContent || '').trim());
@@ -55,12 +68,13 @@
     if (!title) return null;
 
     const channel = extractChannelName(card);
+    const duration = extractDuration(card);
 
     // Sadece gerçek arama snippet'i varsa al; kartın genel metin kapsayıcısını ASLA alma
     const descEl = card.querySelector('#description-text, .metadata-snippet-container');
     const description = descEl ? descEl.textContent.trim().replace(/\s+/g, ' ').slice(0, 200) : '';
 
-    return { id, title: title.slice(0, 240), channel: channel.slice(0, 100), description };
+    return { id, title: title.slice(0, 240), channel: channel.slice(0, 100), description, duration };
   }
 
   function getThumbContainer(card) {
@@ -102,6 +116,9 @@
     if (data.verdict === 'other') icon = '✦';
 
     const wasteHtml = data.waste !== null ? `<span class="bir-cumle-thumb-waste">Atık: %${data.waste}</span>` : '';
+    const dislikeHtml = (typeof data.dislikeRatio === 'number' && data.dislikeRatio >= 15)
+      ? `<span class="bir-cumle-thumb-dislike ${data.dislikeRatio >= 25 ? 'dislike-alert' : ''}">👎 %${data.dislikeRatio}</span>`
+      : '';
     const consensusHtml = data.consensusBadge ? `<span class="bir-cumle-thumb-consensus">${data.consensusBadge}</span>` : '';
 
     overlay.innerHTML = `
@@ -114,6 +131,7 @@
         <p class="bir-cumle-thumb-text">${data.text}</p>
         <div class="bir-cumle-thumb-meta">
           ${wasteHtml}
+          ${dislikeHtml}
           ${consensusHtml}
         </div>
       </div>
@@ -282,6 +300,9 @@
     if (response.verdict === 'entertainment') icon = '🍿';
 
     const wasteHtml = response.waste !== null ? `<span class="bir-cumle-waste-pill ${response.waste >= 65 ? 'waste-high' : response.waste <= 30 ? 'waste-low' : 'waste-mid'}">Atık Riski: %${response.waste}</span>` : '';
+    const dislikeHtml = (typeof response.dislikeRatio === 'number' && response.dislikeRatio >= 10)
+      ? `<span class="bir-cumle-dislike-pill ${response.dislikeRatio >= 25 ? 'dislike-high' : ''}">👎 %${response.dislikeRatio} Dislike</span>`
+      : '';
     const consensusHtml = response.consensusBadge ? `<span class="bir-cumle-consensus-pill">${response.consensusBadge}</span>` : '';
     const quoteHtml = response.topQuote ? `<div class="bir-cumle-watch-quote"><span>💬 Öne Çıkan Yorum:</span> <i>"${response.topQuote}"</i></div>` : '';
 
@@ -291,6 +312,7 @@
           <div class="bir-cumle-pills">
             <span class="bir-cumle-pill ${response.pillClass || 'bir-cumle-pill-other'}">${icon} ${response.badge} · ${response.subtitle}</span>
             ${wasteHtml}
+            ${dislikeHtml}
             ${consensusHtml}
           </div>
           <span class="bir-cumle-engine">JEV DERİN RADAR</span>
@@ -333,6 +355,7 @@
     const channel = document.querySelector('#owner #channel-name a, ytd-watch-metadata #channel-name a')?.textContent?.trim() || '';
     const description = getWatchDescription();
     const comments = getWatchComments();
+    const duration = document.querySelector('.ytp-time-duration')?.textContent?.match(/\b\d{1,2}(?::\d{2}){1,2}\b/)?.[0] || null;
 
     const mount = document.querySelector('ytd-watch-metadata #above-the-fold, #meta, #description-and-actions');
     if (!mount) return;
@@ -349,10 +372,10 @@
       }
     }
 
-    const sig = JSON.stringify({ id: videoId, title, descLen: description.length, commentCount: comments.length });
+    const sig = JSON.stringify({ id: videoId, title, descLen: description.length, commentCount: comments.length, duration });
     if (watchRecord?.sig === sig) return;
 
-    const video = { id: videoId, title, channel, description, comments };
+    const video = { id: videoId, title, channel, description, comments, duration };
     watchRecord = { video, banner, sig, running: false, done: false };
     runWatchAnalysis(video, banner);
 

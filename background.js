@@ -1,4 +1,4 @@
-import { cleanVideo, evaluate } from './core.js';
+import { cleanVideo, evaluate, fetchDislikeStats } from './core.js';
 
 const ready = Promise.all([
   chrome.storage.local.setAccessLevel({ accessLevel: 'TRUSTED_CONTEXTS' }),
@@ -90,9 +90,16 @@ async function analyze(video, isWatch = false) {
 
     if (ticket.analysis) return { ...ticket.analysis, cached: true };
 
+    const dislikeData = await fetchDislikeStats(videoId);
+    if (dislikeData) {
+      video.dislikeRatio = dislikeData.dislikeRatio;
+      video.dislikeCount = dislikeData.dislikes;
+      video.likeCount = dislikeData.likes;
+    }
+
     let analysis;
     try {
-      analysis = await evaluate(video, ticket.key);
+      analysis = await evaluate(video, ticket.key, fetch, dislikeData || {});
     } catch (error) {
       if ([401, 403, 429, 500, 502, 503, 529].includes(error.code)) {
         await lock(async () => {

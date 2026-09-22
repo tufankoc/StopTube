@@ -32,10 +32,14 @@ Modern video platformlarının algoritmaları, kullanıcının **zihinsel geliş
 
 * **🖼️ Küçük Resim Üzeri Doğrudan Teşhis (Thumbnail Overlay):** Harici kutular veya sayfa düzenini bozan bloklar yok. Her şey doğrudan YouTube küçük resminin üzerinde entegre çalışır.
 * **👁️ Hover-to-Reveal (Kusursuz İnceleme):** Blurlanmış bir STOP videosunun üzerine fareyle geldiğinizde overlay anında kaybolur (`opacity: 0`), blur sıfırlanır ve YouTube'un hareketli video önizlemesi pürüzsüzce görünür.
+* **👎 Return YouTube Dislike (RYD) API Entegrasyonu:** Topluluğun gerçek tepkisini doğrudan hesaba katar. Dislike oranı %25'i aşan videolar doğrudan STOP/Tık Tuzağı olarak damgalanır (`👎 %35 Dislike`).
+* **🧠 Deterministik Tık Tuzağı (Clickbait) Heuristikleri:** CAPS oranı (BÜYÜK HARF), sansasyonel tetikleyiciler (ŞOK, İFŞA, İNANILMAZ, vb.) ve aşırı noktalama işaretleri (`?!?!`, `...`) anında tespit edilir.
+* **⏱️ Video Süresi (Duration) Analizi:** Video kartından süreyi çıkararak bilişsel yoğunluğu değerlendirir.
 * **📊 İzleyici Konsensüsü ve Atık Oranı (%):** Video izleme sayfalarında (`/watch`) yorumları ve açıklamayı derinlemesine tarayarak *"İzleyiciler: Zaman Kaybı 👎"* veya *"İzleyiciler: Çok Faydalı 👍"* gibi konsensüs hapları sunar.
-* **🌐 Tüm YouTube Sayfalarında Aktif:** Yalnızca ana sayfa değil; arama sonuçları, `/feed/subscriptions` (Abonelikler), kanal sayfaları ve öneri sütunlarında kesintisiz çalışır.
+* **🌐 Tüm YouTube Sayfalarında Aktif:** Yalnızca ana sayfa değil; arama sonuçları, `/feed/subscriptions` (Abonelikler), kanal sayfaları (`/videos`) ve öneri sütunlarında kesintisiz çalışır.
 * **💾 Akıllı Oturum ve Kalıcı Bellek:** TypeSafe API anahtarını ister sadece oturum süresince tutun, ister "Bu tarayıcıda hatırla" seçeneğiyle kalıcı olarak güvenle saklayın.
-* **⚡ 24 Saatlik Yerel Önbellek (Sub-ms Cache):** Daha önce taranan videolar yerel belleğe alınır; aynı video için tekrar tekrar API çağrısı yapılmaz, kota ve token israfı önlenir.
+* **⚡ 30 Günlük Kalıcı Yerel Önbellek (0 ms Refleks / LRU 2500):** Daha önce taranan videolar yerel belleğe alınır; aynı video için tekrar tekrar API çağrısı yapılmaz, kota ve token israfı önlenir.
+* **🧪 23/23 Otomatik Test Kapsamı:** Node.js native test runner ile tüm fonksiyonlar, regex'ler, önbellek akışı ve manifest sözleşmeleri 70ms içinde doğrulanır.
 
 ---
 

@@ -146,6 +146,26 @@
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
+.bir-cumle-thumb-dislike {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  background: rgba(220, 38, 38, 0.45);
+  color: #ffffff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.bir-cumle-thumb-dislike.dislike-alert {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  border: 1px solid #ffffff !important;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.6);
+}
+
 /* --- TIK TUZAĞI Overlay Stili --- */
 .stamp-clickbait.bir-cumle-thumb-overlay {
   background: radial-gradient(circle at center, rgba(190, 95, 0, 0.82) 0%, rgba(20, 10, 0, 0.90) 100%) !important;
@@ -580,6 +600,36 @@ html[dark] .bir-cumle-waste-pill.waste-low {
   background: rgba(120, 108, 98, 0.15);
   color: var(--bc-text);
   border: 1px solid var(--bc-border);
+}
+
+.bir-cumle-dislike-pill {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.4px;
+  background: rgba(220, 38, 38, 0.12);
+  color: #dc2626;
+  border: 1px solid rgba(220, 38, 38, 0.25);
+}
+
+.bir-cumle-dislike-pill.dislike-high {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #f87171;
+  font-weight: 800;
+}
+
+html[dark] .bir-cumle-dislike-pill {
+  background: rgba(239, 68, 68, 0.18);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+html[dark] .bir-cumle-dislike-pill.dislike-high {
+  background: #450a0a;
+  color: #fca5a5;
+  border-color: #7f1d1d;
 }
 
 .bir-cumle-engine {

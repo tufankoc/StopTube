@@ -8,7 +8,8 @@
     "storage"
   ],
   "host_permissions": [
-    "https://api.typesafe.ai/*"
+    "https://api.typesafe.ai/*",
+    "https://returnyoutubedislikeapi.com/*"
   ],
   "background": {
     "service_worker": "background.js",
@@ -39,7 +40,7 @@
     }
   ],
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'none'; connect-src https://api.typesafe.ai"
+    "extension_pages": "script-src 'self'; object-src 'none'; connect-src https://api.typesafe.ai https://returnyoutubedislikeapi.com"
   },
   "icons": {
     "16": "icons/16.png",

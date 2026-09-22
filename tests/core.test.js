@@ -1,6 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { cleanVideo, requestFor, analysisFor, evaluate, VERDICTS, CONSENSUS_BADGES } from '../core.js';
+import {
+  cleanVideo,
+  requestFor,
+  analysisFor,
+  evaluate,
+  computeClickbaitHeuristics,
+  fetchDislikeStats,
+  VERDICTS,
+  CONSENSUS_BADGES
+} from '../core.js';
 
 test('cleanVideo: geçerli video girdilerini temizler ve doğrular', () => {
   const input = {
@@ -180,3 +189,174 @@ test('evaluate: Kota aşımında 429 hatasını yakalar', async () => {
     { message: 'Jev kullanım sınırı; bir dakika sonra tekrar dene.' }
   );
 });
+
+test('computeClickbaitHeuristics: Sansasyonel başlıkları, CAPS ve noktalama tuzaklarını tespit eder', () => {
+  const clickbait1 = computeClickbaitHeuristics('TÜM GERÇEKLERİ İFŞA ETTİM! KİMSE BİLMİYOR??!');
+  assert.ok(clickbait1.clickbaitScore >= 70, 'Yüksek tık tuzağı skoru vermeli');
+  assert.equal(clickbait1.isHeuristicClickbait, true);
+  assert.ok(clickbait1.triggers.includes('İfşa'));
+  assert.ok(clickbait1.triggers.includes('Aşırı Noktalama'));
+  assert.ok(clickbait1.triggers.includes('TAMAMI BÜYÜK HARF'));
+
+  const clickbait2 = computeClickbaitHeuristics('İNANILMAZ ANLAR! SAKIN İZLEMEDEN GEÇMEYİN...');
+  assert.ok(clickbait2.clickbaitScore >= 60);
+  assert.equal(clickbait2.isHeuristicClickbait, true);
+
+  const clean = computeClickbaitHeuristics('TypeScript 5.5 Tip Çıkarımı ve Performans Rehberi');
+  assert.equal(clean.clickbaitScore, 0);
+  assert.equal(clean.isHeuristicClickbait, false);
+  assert.equal(clean.triggers.length, 0);
+
+  const empty = computeClickbaitHeuristics('');
+  assert.equal(empty.clickbaitScore, 0);
+  assert.equal(empty.isHeuristicClickbait, false);
+});
+
+test('cleanVideo: Süre (duration) ve Dislike istatistiklerini güvenle temizler ve saklar', () => {
+  const input = {
+    id: 'dQw4w9WgXcQ',
+    title: 'Harika Video',
+    channel: 'Kanal',
+    duration: '  14:20  \n',
+    dislikeRatio: 32,
+    dislikeCount: 4500,
+    likeCount: 9500
+  };
+
+  const cleaned = cleanVideo(input);
+  assert.equal(cleaned.duration, '14:20');
+  assert.equal(cleaned.dislikeRatio, 32);
+  assert.equal(cleaned.dislikeCount, 4500);
+  assert.equal(cleaned.likeCount, 9500);
+});
+
+test('requestFor: Süre, dislike oranı ve tık tuzağı şüphe bayraklarını state içine ekler', () => {
+  const video = {
+    id: 'dQw4w9WgXcQ',
+    title: 'ŞOK! İNANILMAZ İFŞA GELDİ!!!',
+    channel: 'Sansasyon',
+    duration: '08:45',
+    dislikeRatio: 40
+  };
+
+  const req = requestFor(video);
+  assert.equal(req.state.duration, '08:45');
+  assert.equal(req.state.dislike_percentage, '40%');
+  assert.ok(req.state.clickbait_suspicion, 'clickbait_suspicion bulunmalı');
+  assert.ok(Array.isArray(req.state.title_flags), 'title_flags bulunmalı');
+});
+
+test('analysisFor: Yüksek dislike oranı (%25+) kararı STOP/Clickbait seviyesine yükseltir (Dislike Override)', () => {
+  const video = {
+    id: 'dQw4w9WgXcQ',
+    title: 'Sıradan Bir Başlık',
+    channel: 'Test Kanalı'
+  };
+
+  // Model 'other' dese bile yüksek dislike STOP'a zorlamalı
+  const mockJevResponse = {
+    answers: {
+      verdict: { type: 'choice', choice: 'other', confidence: 0.5 },
+      content_flaw: { type: 'choice', choice: 'other', confidence: 0.5 },
+      audience_consensus: { type: 'choice', choice: 'no_comments', confidence: 0.5 },
+      is_time_waste: { type: 'noul', noul: 0.3 }
+    }
+  };
+
+  const extra = {
+    dislikeRatio: 35,
+    dislikes: 12000,
+    likes: 22000
+  };
+
+  const res = analysisFor(video, mockJevResponse, extra);
+  assert.equal(res.verdict, 'stop');
+  assert.equal(res.badge, 'STOP');
+  assert.equal(res.dislikeRatio, 35);
+  assert.ok(res.waste >= 70, 'Atık riski dislike oranıyla orantılı yükseltilmeli');
+  assert.ok(res.text.includes('%35 dislike oranı'), 'Dislike topluluk açıklaması eklenmeli');
+});
+
+test('analysisFor: Başlık bariz tık tuzağıysa ve model kararsızsa tık tuzağına yükseltir (Heuristic Override)', () => {
+  const video = {
+    id: 'dQw4w9WgXcQ',
+    title: 'ŞOK İFŞA! KİMSE BUNU BİLMİYOR?!?!',
+    channel: 'Magazin'
+  };
+
+  const mockJevResponse = {
+    answers: {
+      verdict: { type: 'choice', choice: 'other', confidence: 0.3 },
+      content_flaw: { type: 'choice', choice: 'other', confidence: 0.3 },
+      audience_consensus: { type: 'choice', choice: 'no_comments', confidence: 0.5 },
+      is_time_waste: { type: 'noul', noul: 0.4 }
+    }
+  };
+
+  const res = analysisFor(video, mockJevResponse);
+  assert.equal(res.verdict, 'clickbait', 'Heuristik tık tuzağı kararı clickbait yapmalı');
+  assert.equal(res.badge, 'TIK TUZAĞI');
+  assert.ok(res.waste >= 65);
+});
+
+test('evaluate: Return YouTube Dislike (RYD) ekstra verilerini başarıyla işler', async () => {
+  const video = { id: 'dQw4w9WgXcQ', title: 'Python Eğitimi', channel: 'Kod', duration: '25:00' };
+  const mockFetch = async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      answers: {
+        verdict: { type: 'choice', choice: 'valuable', confidence: 0.95 },
+        content_flaw: { type: 'choice', choice: 'technical_guide', confidence: 0.95 },
+        audience_consensus: { type: 'choice', choice: 'no_comments', confidence: 0.5 },
+        is_time_waste: { type: 'noul', noul: 0.05 }
+      }
+    })
+  });
+
+  const dislikeExtra = { dislikeRatio: 2, dislikes: 20, likes: 980 };
+  const result = await evaluate(video, 'valid_key', mockFetch, dislikeExtra);
+  assert.equal(result.verdict, 'valuable');
+  assert.equal(result.duration, '25:00');
+  assert.equal(result.dislikeRatio, 2);
+  assert.equal(result.dislikeCount, 20);
+  assert.equal(result.likeCount, 980);
+});
+
+test('fetchDislikeStats: API yanıtını doğru oranla ayrıştırır ve hatalarda null döner', async () => {
+  // Başarılı yanıt
+  const mockFetchSuccess = async (url) => {
+    assert.ok(url.includes('dQw4w9WgXcQ'));
+    return {
+      ok: true,
+      json: async () => ({
+        id: 'dQw4w9WgXcQ',
+        likes: 8000,
+        dislikes: 2000,
+        viewCount: 150000
+      })
+    };
+  };
+
+  const res = await fetchDislikeStats('dQw4w9WgXcQ', mockFetchSuccess);
+  assert.ok(res);
+  assert.equal(res.likes, 8000);
+  assert.equal(res.dislikes, 2000);
+  assert.equal(res.dislikeRatio, 20); // 2000 / (8000 + 2000) = %20
+  assert.equal(res.viewCount, 150000);
+
+  // 404 / API hatası
+  const mockFetch404 = async () => ({ ok: false, status: 404 });
+  const res404 = await fetchDislikeStats('dQw4w9WgXcQ', mockFetch404);
+  assert.equal(res404, null, 'Hatalı yanıtta null dönmeli');
+
+  // Ağ hatası veya zaman aşımı
+  const mockFetchError = async () => { throw new Error('Ağ koptu'); };
+  const resError = await fetchDislikeStats('dQw4w9WgXcQ', mockFetchError);
+  assert.equal(resError, null, 'İstisna fırlatılan durumda güvenle null dönmeli');
+
+  // Geçersiz ID
+  assert.equal(await fetchDislikeStats(null), null);
+  assert.equal(await fetchDislikeStats(''), null);
+});
+
