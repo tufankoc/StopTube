@@ -54,6 +54,22 @@
     return match ? match[0] : null;
   }
 
+  function extractPaidPromotion(card) {
+    const badge = card.querySelector(
+      '.yt-badge-shape__text, ' +
+      'ytd-badge-supported-renderer, ' +
+      '#paid-content-badge, ' +
+      '.badge-style-type-simple'
+    );
+    if (badge) {
+      const text = (badge.textContent || '').toLowerCase();
+      if (text.includes('ücretli') || text.includes('tanıtım') || text.includes('paid') || text.includes('sponsor')) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   function metadata(card) {
     const anchor = card.querySelector('a#video-title, a#video-title-link, a.yt-lockup-metadata-view-model__title, h3 a[href*="/watch"]')
       || [...card.querySelectorAll('a[href*="/watch?v="]')].find(a => (a.getAttribute('title') || a.textContent || '').trim());
@@ -69,12 +85,13 @@
 
     const channel = extractChannelName(card);
     const duration = extractDuration(card);
+    const hasPaidPromotion = extractPaidPromotion(card);
 
     // Sadece gerçek arama snippet'i varsa al; kartın genel metin kapsayıcısını ASLA alma
     const descEl = card.querySelector('#description-text, .metadata-snippet-container');
     const description = descEl ? descEl.textContent.trim().replace(/\s+/g, ' ').slice(0, 200) : '';
 
-    return { id, title: title.slice(0, 240), channel: channel.slice(0, 100), description, duration };
+    return { id, title: title.slice(0, 240), channel: channel.slice(0, 100), description, duration, hasPaidPromotion };
   }
 
   function getThumbContainer(card) {
@@ -122,6 +139,9 @@
     const dislikeHtml = (typeof data.dislikeRatio === 'number' && data.dislikeRatio >= 15)
       ? `<span class="bir-cumle-thumb-dislike ${data.dislikeRatio >= 25 ? 'dislike-alert' : ''}">👎 %${data.dislikeRatio}</span>`
       : '';
+    const sponsorHtml = data.hasPaidPromotion
+      ? `<span class="bir-cumle-thumb-sponsor">🏷️ ${isEn ? 'SPONSORED' : 'SPONSORLU'}</span>`
+      : '';
     const consensusHtml = data.consensusBadge ? `<span class="bir-cumle-thumb-consensus">${data.consensusBadge}</span>` : '';
 
     overlay.innerHTML = `
@@ -135,6 +155,7 @@
         <div class="bir-cumle-thumb-meta">
           ${wasteHtml}
           ${dislikeHtml}
+          ${sponsorHtml}
           ${consensusHtml}
         </div>
       </div>
@@ -316,6 +337,9 @@
     const dislikeHtml = (typeof response.dislikeRatio === 'number' && response.dislikeRatio >= 10)
       ? `<span class="bir-cumle-dislike-pill ${response.dislikeRatio >= 25 ? 'dislike-high' : ''}">👎 %${response.dislikeRatio} Dislike</span>`
       : '';
+    const sponsorHtml = response.hasPaidPromotion
+      ? `<span class="bir-cumle-sponsor-pill">🏷️ ${respEn ? 'Sponsored / Ad' : 'Sponsor / Reklam'}</span>`
+      : '';
     const consensusHtml = response.consensusBadge ? `<span class="bir-cumle-consensus-pill">${response.consensusBadge}</span>` : '';
     const quoteHtml = response.topQuote ? `<div class="bir-cumle-watch-quote"><span>${quoteTitle}</span> <i>"${response.topQuote}"</i></div>` : '';
 
@@ -326,6 +350,7 @@
             <span class="bir-cumle-pill ${response.pillClass || 'bir-cumle-pill-other'}">${icon} ${response.badge} · ${response.subtitle}</span>
             ${wasteHtml}
             ${dislikeHtml}
+            ${sponsorHtml}
             ${consensusHtml}
           </div>
           <span class="bir-cumle-engine">${engineTitle}</span>
@@ -334,6 +359,15 @@
         ${quoteHtml}
       </div>
     `;
+  }
+
+  function extractWatchPaidPromotion() {
+    const overlay = document.querySelector('.ytp-paid-content-overlay, .ytp-paid-content-overlay-text, ytd-paid-content-overlay-renderer, #paid-content-badge');
+    if (overlay && overlay.textContent) {
+      const text = overlay.textContent.toLowerCase();
+      return text.includes('ücretli') || text.includes('tanıtım') || text.includes('paid') || text.includes('sponsor');
+    }
+    return false;
   }
 
   async function runWatchAnalysis(video, banner) {
@@ -369,6 +403,7 @@
     const description = getWatchDescription();
     const comments = getWatchComments();
     const duration = document.querySelector('.ytp-time-duration')?.textContent?.match(/\b\d{1,2}(?::\d{2}){1,2}\b/)?.[0] || null;
+    const hasPaidPromotion = extractWatchPaidPromotion();
 
     const mount = document.querySelector('ytd-watch-metadata #above-the-fold, #meta, #description-and-actions');
     if (!mount) return;
@@ -385,10 +420,10 @@
       }
     }
 
-    const sig = JSON.stringify({ id: videoId, title, descLen: description.length, commentCount: comments.length, duration, lang });
+    const sig = JSON.stringify({ id: videoId, title, descLen: description.length, commentCount: comments.length, duration, hasPaidPromotion, lang });
     if (watchRecord?.sig === sig) return;
 
-    const video = { id: videoId, title, channel, description, comments, duration, lang };
+    const video = { id: videoId, title, channel, description, comments, duration, hasPaidPromotion, lang };
     watchRecord = { video, banner, sig, running: false, done: false };
     runWatchAnalysis(video, banner);
 

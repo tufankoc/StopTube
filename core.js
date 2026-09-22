@@ -18,6 +18,7 @@ export const VERDICTS = {
         reaction_or_humor: 'Sıradan tepki veya montaj videosu; bilgi değeri sıfır, zaman kaybı.',
         technical_guide: 'Yüzeysel veya kurgusal rehber; somut teknik derinlikten yoksun, vakit hırsızı.',
         analytical_review: 'Rutin sponsorlu tanıtım; bağımsız veya analitik bir inceleme değeri taşımıyor.',
+        sponsored_pitch: 'Sponsorlu ürün tanıtımı ve satış vitrini; somut tarafsız bilgi içermeyen rutin reklam. Zaman kaybı.',
         default: 'Düşük bilgi yoğunluğu ve vakit hırsızı içerik; somut bir kazanım sağlamaz.'
       },
       consensusReasons: {
@@ -35,6 +36,7 @@ export const VERDICTS = {
         reaction_or_humor: 'Low-effort reaction or superficial montage; zero knowledge density, skip it.',
         technical_guide: 'Shallow or staged guide lacking practical depth. Unproductive time waste.',
         analytical_review: 'Routine sponsored product placement lacking rigorous objective review.',
+        sponsored_pitch: 'Sponsored product showcase and promotional pitch; lacks objective depth. Definite time waste.',
         default: 'Low knowledge density and time-wasting filler; offers no practical value.'
       },
       consensusReasons: {
@@ -49,6 +51,7 @@ export const VERDICTS = {
       reaction_or_humor: 'Sıradan tepki veya montaj videosu; bilgi değeri sıfır, zaman kaybı.',
       technical_guide: 'Yüzeysel veya kurgusal rehber; somut teknik derinlikten yoksun, vakit hırsızı.',
       analytical_review: 'Rutin sponsorlu tanıtım; bağımsız veya analitik bir inceleme değeri taşımıyor.',
+      sponsored_pitch: 'Sponsorlu ürün tanıtımı ve satış vitrini; somut tarafsız bilgi içermeyen rutin reklam. Zaman kaybı.',
       default: 'Düşük bilgi yoğunluğu ve vakit hırsızı içerik; somut bir kazanım sağlamaz.'
     },
     consensusReasons: {
@@ -327,6 +330,52 @@ export function computeClickbaitHeuristics(title) {
   };
 }
 
+export function computeSponsorHeuristics(title = '', description = '') {
+  const combined = `${title || ''} ${description || ''}`.trim();
+  if (!combined) {
+    return { isSponsored: false, sponsorScore: 0, sponsorTriggers: [] };
+  }
+  const normalized = normTurkish(combined);
+  const triggers = [];
+
+  const SPONSOR_PATTERNS = [
+    { pattern: /\b(isbirligi|is birligi|isbirligiyle)\b/, name: 'İş Birliği' },
+    { pattern: /\b(sponsor|sponsorlu|sponsored)\b/, name: 'Sponsorlu' },
+    { pattern: /\b(ucretli tanitim|paid promotion|paid partnership)\b/, name: 'Ücretli Tanıtım' },
+    { pattern: /\b(indirim kodu|promosyon kodu|discount code|promo code)\b/, name: 'İndirim/Promosyon Kodu' },
+    { pattern: /\b(reklam|advertisement)\b/, name: 'Reklam' },
+    { pattern: /#(reklam|isbirligi|isbirligidir|ad|sponsored)\b/, name: 'Reklam Etiketi (#ad)' },
+    { pattern: /\b(linkler asagida|satin alma linki|affiliate link)\b/, name: 'Ortaklık/Satış Linki' }
+  ];
+
+  for (const { pattern, name } of SPONSOR_PATTERNS) {
+    if (pattern.test(normalized)) {
+      triggers.push(name);
+    }
+  }
+
+  const isSponsored = triggers.length > 0;
+  const score = Math.min(100, triggers.length * 35);
+
+  return {
+    isSponsored,
+    sponsorScore: score,
+    sponsorTriggers: [...new Set(triggers)]
+  };
+}
+
+export function parseDurationToSeconds(durationStr) {
+  if (!durationStr || typeof durationStr !== 'string') return null;
+  const parts = durationStr.trim().split(':').map(Number);
+  if (parts.some(isNaN)) return null;
+  if (parts.length === 2) {
+    return parts[0] * 60 + parts[1]; // mm:ss
+  } else if (parts.length === 3) {
+    return parts[0] * 3600 + parts[1] * 60 + parts[2]; // hh:mm:ss
+  }
+  return null;
+}
+
 export function cleanVideo(value) {
   if (!value || !/^[A-Za-z0-9_-]{11}$/.test(value.id) || !tidy(value.title)) return null;
   const duration = (typeof value.duration === 'string' && value.duration.trim()) ? tidy(value.duration).slice(0, 20) : null;
@@ -337,6 +386,7 @@ export function cleanVideo(value) {
     description: tidy(value.description || '').slice(0, 500),
     comments: Array.isArray(value.comments) ? value.comments.map(tidy).filter(c => c.length > 3).slice(0, 8) : [],
     duration: duration || null,
+    hasPaidPromotion: value.hasPaidPromotion === true,
     dislikeRatio: Number.isFinite(value.dislikeRatio) ? value.dislikeRatio : null,
     dislikeCount: Number.isFinite(value.dislikeCount) ? value.dislikeCount : null,
     likeCount: Number.isFinite(value.likeCount) ? value.likeCount : null
@@ -350,6 +400,21 @@ export function requestFor(video) {
   };
   if (video.duration) {
     state.duration = video.duration;
+    const durSec = parseDurationToSeconds(video.duration);
+    if (durSec !== null) {
+      if (durSec >= 480 && durSec <= 750) {
+        state.duration_bracket = '8-12m (mid-roll ad padding window)';
+      } else if (durSec > 1800) {
+        state.duration_bracket = '30m+ (long-form)';
+      }
+    }
+  }
+  if (video.hasPaidPromotion) {
+    state.has_paid_promotion_badge = true;
+  }
+  const sponsor = computeSponsorHeuristics(video.title, video.description);
+  if (sponsor.isSponsored) {
+    state.sponsor_signals = sponsor.sponsorTriggers;
   }
   if (video.dislikeRatio !== null && video.dislikeRatio !== undefined) {
     state.dislike_percentage = `${video.dislikeRatio}%`;
@@ -466,7 +531,14 @@ export function analysisFor(video, response, extra = {}) {
   // 1. Clickbait Heuristik Analizi
   const heuristics = computeClickbaitHeuristics(video.title);
 
-  // 2. Dislike İstatistikleri (Return YouTube Dislike veya Video Meta)
+  // 2. Sponsor ve Reklam Heuristiği & Ücretli Tanıtım Kontrolü
+  const sponsorHeuristics = computeSponsorHeuristics(video.title, video.description);
+  const hasPaidPromotion = video.hasPaidPromotion === true || extra.hasPaidPromotion === true || sponsorHeuristics.isSponsored;
+
+  // 3. Süre (Duration) Analizi
+  const durationSec = parseDurationToSeconds(video.duration);
+
+  // 4. Dislike İstatistikleri (Return YouTube Dislike veya Video Meta)
   const dislikeRatio = Number.isFinite(extra.dislikeRatio) ? extra.dislikeRatio : (Number.isFinite(video.dislikeRatio) ? video.dislikeRatio : null);
   const dislikeCount = Number.isFinite(extra.dislikes) ? extra.dislikes : (Number.isFinite(video.dislikeCount) ? video.dislikeCount : null);
   const likeCount = Number.isFinite(extra.likes) ? extra.likes : (Number.isFinite(video.likeCount) ? video.likeCount : null);
@@ -481,6 +553,19 @@ export function analysisFor(video, response, extra = {}) {
     verdict = 'stop';
   }
 
+  // SPONSOR & REKLAM OVERRIDE:
+  // Eğer videoda ücretli sponsorluk/reklam tespit edilmişse ve kişisel vlog/vitrin veya yüzeysel tanıtımsa:
+  let isSponsoredStop = false;
+  if (hasPaidPromotion && (verdict === 'other' || flaw === 'consumer_inventory' || flaw === 'analytical_review')) {
+    verdict = 'stop';
+    isSponsoredStop = true;
+    if (waste === null || waste < 65) waste = 75;
+  } else if (sponsorHeuristics.sponsorScore >= 60 && verdict === 'other') {
+    verdict = 'stop';
+    isSponsoredStop = true;
+    if (waste === null || waste < 65) waste = 70;
+  }
+
   // Jev is_clickbait noul desteği:
   if (clickbaitNoul !== null && clickbaitNoul >= 70 && (verdict === 'other' || verdict === 'entertainment')) {
     verdict = 'clickbait';
@@ -492,6 +577,18 @@ export function analysisFor(video, response, extra = {}) {
     verdict = 'valuable';
   } else if (density === 'low' && verdict === 'other' && heuristics.isHeuristicClickbait) {
     verdict = 'stop';
+  }
+
+  // SÜRE (DURATION) MODİFİYERİ:
+  // 1. 8-12 dakika aralığı (YouTube mid-roll reklam aralığı için video sündürme kalıbı) ve tık tuzağı
+  if (durationSec !== null) {
+    if (durationSec >= 480 && durationSec <= 750 && (heuristics.isHeuristicClickbait || verdict === 'clickbait')) {
+      waste = Math.min(95, Math.max(waste || 0, 70));
+    }
+    // 2. 20+ dakika süren içi boş vlog / vitrin videolarında atık riskini tavan yap
+    if (durationSec >= 1200 && verdict === 'stop') {
+      waste = Math.min(95, Math.max(waste || 0, 80));
+    }
   }
 
   // DISLIKE OVERRIDE:
@@ -517,7 +614,9 @@ export function analysisFor(video, response, extra = {}) {
   const langConf = conf[lang] || conf.tr || conf;
 
   let text = '';
-  if (dislikeRatio !== null && dislikeRatio >= 25 && consensus === 'no_comments') {
+  if (isSponsoredStop && langConf.reasons?.sponsored_pitch) {
+    text = langConf.reasons.sponsored_pitch;
+  } else if (dislikeRatio !== null && dislikeRatio >= 25 && consensus === 'no_comments') {
     text = langConf.dislikeReason
       ? langConf.dislikeReason(dislikeRatio)
       : (lang === 'en'
@@ -559,6 +658,10 @@ export function analysisFor(video, response, extra = {}) {
     knowledgeDensity: density,
     topQuote,
     duration: video.duration || null,
+    durationSeconds: durationSec,
+    hasPaidPromotion,
+    sponsorScore: sponsorHeuristics.sponsorScore,
+    sponsorTriggers: sponsorHeuristics.sponsorTriggers,
     dislikeRatio,
     dislikeCount,
     likeCount,

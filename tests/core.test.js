@@ -6,6 +6,8 @@ import {
   analysisFor,
   evaluate,
   computeClickbaitHeuristics,
+  computeSponsorHeuristics,
+  parseDurationToSeconds,
   fetchDislikeStats,
   VERDICTS,
   CONSENSUS_BADGES
@@ -437,5 +439,85 @@ test('analysisFor: knowledge_density="deep" ve düşük atık riskinde nötr kar
   assert.equal(res.verdict, 'valuable', 'Derin bilgi yoğunluğu kararı VALUABLE yapmalı');
   assert.equal(res.badge, 'İZLENİR');
 });
+
+test('computeSponsorHeuristics: sponsor, reklam, iş birliği ve indirim kodu kalıplarını yakalar', () => {
+  const t1 = computeSponsorHeuristics('Yeni Telefon Kutudan Çıkıyor #işbirliği', 'İndirim kodu TUFAN20 ile linkler aşağıda');
+  assert.equal(t1.isSponsored, true);
+  assert.ok(t1.sponsorTriggers.includes('İş Birliği'));
+  assert.ok(t1.sponsorTriggers.includes('İndirim/Promosyon Kodu'));
+  assert.ok(t1.sponsorTriggers.includes('Ortaklık/Satış Linki'));
+  assert.ok(t1.sponsorScore >= 70);
+
+  const t2 = computeSponsorHeuristics('Rust Programlama Dili Rehberi', 'Sıfırdan ileri seviyeye mimari dersi.');
+  assert.equal(t2.isSponsored, false);
+  assert.equal(t2.sponsorScore, 0);
+});
+
+test('parseDurationToSeconds: video süresini saniyeye doğru ayrıştırır', () => {
+  assert.equal(parseDurationToSeconds('14:20'), 860);
+  assert.equal(parseDurationToSeconds('1:02:15'), 3735);
+  assert.equal(parseDurationToSeconds('0:45'), 45);
+  assert.equal(parseDurationToSeconds(''), null);
+  assert.equal(parseDurationToSeconds(null), null);
+  assert.equal(parseDurationToSeconds('geçersiz'), null);
+});
+
+test('analysisFor: Sponsorlu reklam vitrini (hasPaidPromotion) tespitinde STOP seviyesine yükseltir (Sponsor Override)', () => {
+  const video = {
+    id: 'dQw4w9WgXcQ',
+    title: 'Yeni Favori Ürünlerim #işbirliği',
+    channel: 'Lifestyle',
+    description: 'Tüm sponsorlu ürünlerin linkleri aşağıdadır.',
+    hasPaidPromotion: true
+  };
+  const mockJevResponse = {
+    answers: {
+      verdict: { type: 'choice', choice: 'other', confidence: 0.4 },
+      content_flaw: { type: 'choice', choice: 'consumer_inventory', confidence: 0.8 },
+      audience_consensus: { type: 'choice', choice: 'no_comments', confidence: 0.5 },
+      is_time_waste: { type: 'noul', noul: 0.5 }
+    }
+  };
+
+  const res = analysisFor(video, mockJevResponse);
+  assert.equal(res.verdict, 'stop', 'Sponsorlu tüketim vitrini STOP olmalı');
+  assert.equal(res.badge, 'STOP');
+  assert.equal(res.hasPaidPromotion, true);
+  assert.ok(res.waste >= 75);
+  assert.ok(res.text.includes('Sponsorlu ürün tanıtımı'));
+});
+
+test('analysisFor: Süre Modifiyeri (8-12 dk mid-roll reklam padding ve 20+ dk boş vlog)', () => {
+  // 1. 8-12 dakika tık tuzağı: atık oranını en az %70 yapar
+  const padVideo = { id: 'dQw4w9WgXcQ', title: 'İNANILMAZ ŞOK GELİŞME!', channel: 'Haber', duration: '10:04' };
+  const padResponse = {
+    answers: {
+      verdict: { type: 'choice', choice: 'clickbait', confidence: 0.8 },
+      content_flaw: { type: 'choice', choice: 'sensational_clickbait', confidence: 0.8 },
+      audience_consensus: { type: 'choice', choice: 'no_comments', confidence: 0.5 },
+      is_time_waste: { type: 'noul', noul: 0.55 }
+    }
+  };
+  const padRes = analysisFor(padVideo, padResponse);
+  assert.equal(padRes.verdict, 'clickbait');
+  assert.ok(padRes.waste >= 70, '10 dakikalık mid-roll reklam tuzağında atık oranı yükseltilmeli');
+  assert.equal(padRes.durationSeconds, 604);
+
+  // 2. 20+ dakika içi boş vlog: atık oranını en az %80 yapar
+  const longVideo = { id: 'dQw4w9WgXcQ', title: 'YURT ODASI TURU', channel: 'Vlog', duration: '24:30' };
+  const longResponse = {
+    answers: {
+      verdict: { type: 'choice', choice: 'stop', confidence: 0.85 },
+      content_flaw: { type: 'choice', choice: 'consumer_inventory', confidence: 0.85 },
+      audience_consensus: { type: 'choice', choice: 'no_comments', confidence: 0.5 },
+      is_time_waste: { type: 'noul', noul: 0.70 }
+    }
+  };
+  const longRes = analysisFor(longVideo, longResponse);
+  assert.equal(longRes.verdict, 'stop');
+  assert.ok(longRes.waste >= 80, '20+ dakikalık boş vlogda atık oranı %80 üzerine çıkarılmalı');
+  assert.equal(longRes.durationSeconds, 1470);
+});
+
 
 

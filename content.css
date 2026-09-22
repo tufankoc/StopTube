@@ -166,6 +166,19 @@
   box-shadow: 0 2px 8px rgba(220, 38, 38, 0.6);
 }
 
+.bir-cumle-thumb-sponsor {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  background: rgba(217, 119, 6, 0.55);
+  color: #fef3c7;
+  padding: 2px 6px;
+  border-radius: 4px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: 1px solid rgba(251, 191, 36, 0.6);
+}
+
 /* --- TIK TUZAĞI Overlay Stili --- */
 .stamp-clickbait.bir-cumle-thumb-overlay {
   background: radial-gradient(circle at center, rgba(190, 95, 0, 0.82) 0%, rgba(20, 10, 0, 0.90) 100%) !important;
@@ -627,9 +640,26 @@ html[dark] .bir-cumle-dislike-pill {
 }
 
 html[dark] .bir-cumle-dislike-pill.dislike-high {
-  background: #450a0a;
-  color: #fca5a5;
-  border-color: #7f1d1d;
+  background: rgba(220, 38, 38, 0.4);
+  color: #fecaca;
+  border-color: #ef4444;
+}
+
+.bir-cumle-sponsor-pill {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.4px;
+  background: rgba(217, 119, 6, 0.12);
+  color: #b45309;
+  border: 1px solid rgba(217, 119, 6, 0.3);
+}
+
+html[dark] .bir-cumle-sponsor-pill {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fcd34d;
+  border-color: rgba(245, 158, 11, 0.4);
 }
 
 .bir-cumle-engine {
