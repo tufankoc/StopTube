@@ -75,3 +75,10 @@ test('YouTube URL Yönlendirme Mantığı: İlgili sayfaları izin verir, stüdy
   assert.equal(allowed('/studio/channel'), false, 'Studio sayfası engellenmeli');
   assert.equal(allowed('/tv/browse'), false, 'YouTube TV engellenmeli');
 });
+
+test('Kanal Sayfası ve Grid Desteği: CARDS seçicisi kanal videolarını kapsar', () => {
+  const contentJs = fs.readFileSync(path.join(rootDir, 'content.js'), 'utf-8');
+  assert.ok(contentJs.includes('ytd-grid-video-renderer'), 'CARDS seçicisi ytd-grid-video-renderer içermeli (Kanal videoları sekmesi için)');
+  assert.ok(contentJs.includes('extractChannelName'), 'Kanal adını sayfa başlığından yakalayan fallback fonksiyonu bulunmalı');
+  assert.ok(contentJs.includes('yt-page-data-updated'), 'Kanal sekmeleri arası geçişi dinleyen yt-page-data-updated dinleyicisi bulunmalı');
+});

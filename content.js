@@ -1,5 +1,5 @@
 (() => {
-  const CARDS = 'ytd-rich-item-renderer, ytd-compact-video-renderer, yt-lockup-view-model, ytd-video-renderer';
+  const CARDS = 'ytd-rich-item-renderer, ytd-grid-video-renderer, ytd-video-renderer, ytd-compact-video-renderer, yt-lockup-view-model, ytd-rich-grid-media';
   const records = new Map();
   let enabled = false, scanTimer, stopped = false;
   let watchRecord = null, commentsObserver = null;
@@ -23,6 +23,24 @@
     });
   }
 
+  function extractChannelName(card) {
+    // 1. Kart içindeki kanal bağlantısı (Ana sayfa, arama, öneriler)
+    const inCard = card.querySelector('ytd-channel-name a, #channel-name a, #channel-name, .yt-content-metadata-view-model__metadata-row a, #byline a, #metadata-line a')?.textContent?.trim();
+    if (inCard) return inCard;
+
+    // 2. Kanal sayfasındaysak (Videolar sekmesi): sayfa başlığından al
+    const inHeader = document.querySelector('yt-page-header-view-model h1, ytd-channel-name#channel-name, #channel-header #channel-name, #inner-header-container #text, #channel-title')?.textContent?.trim();
+    if (inHeader) return inHeader;
+
+    // 3. URL @handle fallback
+    if (location.pathname.startsWith('/@')) {
+      const parts = location.pathname.split('/');
+      if (parts[1]) return decodeURIComponent(parts[1]);
+    }
+
+    return '';
+  }
+
   function metadata(card) {
     const anchor = card.querySelector('a#video-title, a#video-title-link, a.yt-lockup-metadata-view-model__title, h3 a[href*="/watch"]')
       || [...card.querySelectorAll('a[href*="/watch?v="]')].find(a => (a.getAttribute('title') || a.textContent || '').trim());
@@ -36,7 +54,7 @@
     const title = (anchor.getAttribute('title') || anchor.textContent || '').trim().replace(/\s+/g, ' ');
     if (!title) return null;
 
-    const channel = card.querySelector('ytd-channel-name a, #channel-name, .yt-content-metadata-view-model__metadata-row a')?.textContent?.trim() || '';
+    const channel = extractChannelName(card);
 
     // Sadece gerçek arama snippet'i varsa al; kartın genel metin kapsayıcısını ASLA alma
     const descEl = card.querySelector('#description-text, .metadata-snippet-container');
@@ -47,7 +65,7 @@
 
   function getThumbContainer(card) {
     return card.querySelector('ytd-thumbnail, .yt-lockup-view-model__media, yt-thumbnail-view-model')
-      || card.querySelector('#thumbnail, a#thumbnail');
+      || card.querySelector('#thumbnail, a#thumbnail, ytd-playlist-thumbnail');
   }
 
   function updateStamp(record, data, loading = false) {
@@ -160,7 +178,7 @@
         if (record && !record.attempted) run(record);
       }
     }
-  }, { threshold: 0.15 });
+  }, { rootMargin: '300px', threshold: 0.05 });
 
   function remove(card, record) {
     observer.unobserve(card);
@@ -191,7 +209,7 @@
       const signature = JSON.stringify(video);
       if (old?.signature === signature) {
         const rect = card.getBoundingClientRect();
-        if (!old.done && !old.busy && !old.attempted && rect.bottom > 0 && rect.top < innerHeight) {
+        if (!old.done && !old.busy && !old.attempted && rect.bottom > 0 && rect.top < innerHeight + 250) {
           run(old);
         }
         continue;
@@ -204,6 +222,11 @@
       records.set(card, record);
 
       observer.observe(card);
+
+      const rect = card.getBoundingClientRect();
+      if (rect.bottom > 0 && rect.top < innerHeight + 250) {
+        run(record);
+      }
     }
 
     scanWatchPage();
@@ -368,7 +391,9 @@
   });
 
   document.addEventListener('yt-navigate-finish', refresh);
+  document.addEventListener('yt-page-data-updated', refresh);
   document.addEventListener('visibilitychange', refresh);
+  window.addEventListener('popstate', refresh);
   window.addEventListener('focus', refresh);
   setInterval(refresh, 5000);
   refresh();
