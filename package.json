@@ -1,7 +1,7 @@
 {
-  "name": "zaman-radari",
+  "name": "stoptube",
   "version": "1.2.0",
-  "description": "YouTube için Bilişsel STOP Kalkanı ve Zaman Radarı",
+  "description": "StopTube · YouTube için Bilişsel STOP Kalkanı ve Zaman Radarı",
   "type": "module",
   "scripts": {
     "test": "node --test tests/*.test.js"

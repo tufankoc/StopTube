@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "Bir Cümle · STOP & Zaman Radarı",
-  "description": "YouTube ana sayfası ve önerilerdeki videoları bilişsel radardan geçir; zaman kaybı ve tık tuzaklarını 🛑 STOP damgasıyla engelle.",
+  "name": "StopTube · STOP & Zaman Radarı",
+  "description": "YouTube ana sayfası ve önerilerdeki videoları bilişsel radardan geçir; zaman kaybı, tık tuzakları ve sponsorlu vitrinleri 🛑 STOP damgasıyla engelle.",
   "version": "1.2.0",
   "minimum_chrome_version": "120",
   "permissions": [
@@ -17,7 +17,7 @@
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Bir Cümle · STOP Radarı",
+    "default_title": "StopTube · STOP Radarı",
     "default_icon": {
       "16": "icons/16.png",
       "32": "icons/32.png",
