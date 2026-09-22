@@ -1,9 +1,12 @@
 import { cleanVideo, evaluate, fetchDislikeStats } from './core.js';
 
-const ready = Promise.all([
-  chrome.storage.local.setAccessLevel({ accessLevel: 'TRUSTED_CONTEXTS' }),
-  chrome.storage.session.setAccessLevel({ accessLevel: 'TRUSTED_CONTEXTS' })
-]);
+const ready = (async () => {
+  try {
+    if (chrome.storage?.session?.setAccessLevel) {
+      await chrome.storage.session.setAccessLevel({ accessLevel: 'TRUSTED_CONTEXTS' });
+    }
+  } catch {}
+})();
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.storage.session.set({ cache: {} }).catch(() => {});
@@ -137,8 +140,9 @@ async function analyze(video, isWatch = false) {
 
 async function handle(message, sender) {
   await ready;
+  if (!message || typeof message !== 'object') throw new Error('Geçersiz istek biçimi.');
   if (sender.id !== chrome.runtime.id) throw new Error('Yetkisiz istek.');
-  const popup = sender.url === chrome.runtime.getURL('popup.html');
+  const popup = sender.url?.startsWith(chrome.runtime.getURL('popup.html')) || (!sender.tab && sender.id === chrome.runtime.id);
   let youtube = false;
   try {
     const url = new URL(sender.url);
@@ -219,8 +223,8 @@ async function handle(message, sender) {
 
   if (message?.type === 'test') {
     const s = await status();
-    if (!s.configured) throw new Error('Önce API anahtarını kaydet.');
-    if (!s.enabled) throw new Error('Bağlantı testi için eklentiyi etkinleştir.');
+    if (!s.configured) throw new Error(s.lang === 'en' ? 'Save your API key first.' : 'Önce API anahtarını kaydet.');
+    if (!s.enabled) throw new Error(s.lang === 'en' ? 'Enable extension to run test.' : 'Bağlantı testi için eklentiyi etkinleştir.');
     return analyze({
       id: 'demo1234567',
       title: 'EVİMDE KULLANDIĞIM TÜM TEKNOLOJİK ÜRÜNLER',
@@ -233,7 +237,9 @@ async function handle(message, sender) {
     });
   }
 
-  throw new Error('Bilinmeyen işlem.');
+  const s = await status().catch(() => ({ lang: 'tr' }));
+  const isEn = message?.lang === 'en' || s.lang === 'en';
+  throw new Error(isEn ? 'Unknown operation.' : 'Bilinmeyen işlem.');
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

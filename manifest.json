@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Bir Cümle · STOP & Zaman Radarı",
   "description": "YouTube ana sayfası ve önerilerdeki videoları bilişsel radardan geçir; zaman kaybı ve tık tuzaklarını 🛑 STOP damgasıyla engelle.",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "minimum_chrome_version": "120",
   "permissions": [
     "storage"

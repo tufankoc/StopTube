@@ -1,6 +1,6 @@
 {
   "name": "zaman-radari",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "YouTube için Bilişsel STOP Kalkanı ve Zaman Radarı",
   "type": "module",
   "scripts": {

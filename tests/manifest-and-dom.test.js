@@ -85,3 +85,39 @@ test('Kanal Sayfası ve Grid Desteği: CARDS seçicisi kanal videolarını kapsa
   assert.ok(contentJs.includes('extractChannelName'), 'Kanal adını sayfa başlığından yakalayan fallback fonksiyonu bulunmalı');
   assert.ok(contentJs.includes('yt-page-data-updated'), 'Kanal sekmeleri arası geçişi dinleyen yt-page-data-updated dinleyicisi bulunmalı');
 });
+
+test('Sürüm Senkronizasyonu: manifest.json, package.json ve popup.html sürümleri eşleşmeli', () => {
+  const manifest = JSON.parse(fs.readFileSync(path.join(rootDir, 'manifest.json'), 'utf-8'));
+  const pkg = JSON.parse(fs.readFileSync(path.join(rootDir, 'package.json'), 'utf-8'));
+  const popupHtml = fs.readFileSync(path.join(rootDir, 'popup.html'), 'utf-8');
+
+  assert.equal(manifest.version, '1.2.0', 'manifest.json sürümü 1.2.0 olmalı');
+  assert.equal(pkg.version, '1.2.0', 'package.json sürümü 1.2.0 olmalı');
+  assert.ok(popupHtml.includes('v1.2.0 · Jev System One'), 'popup.html sürümü v1.2.0 olmalı');
+});
+
+test('Chrome Storage API Güvenliği: background.js geçersiz local.setAccessLevel çağırmamalı', () => {
+  const bgContent = fs.readFileSync(path.join(rootDir, 'background.js'), 'utf-8');
+  assert.equal(bgContent.includes('chrome.storage.local.setAccessLevel'), false, 'chrome.storage.local.setAccessLevel Chrome API standardında yoktur, çağrılmamalı');
+  assert.ok(bgContent.includes('chrome.storage?.session?.setAccessLevel'), 'chrome.storage.session.setAccessLevel güvenli opsiyonel zincirlemeyle çağrılmalı');
+});
+
+test('Popup Hata Bariyeri: lang-tr ve lang-en dinleyicileri yakalanmamış promise üretmemeli', () => {
+  const popupJs = fs.readFileSync(path.join(rootDir, 'popup.js'), 'utf-8');
+  assert.ok(popupJs.includes("changeLang('tr')"), 'lang-tr changeLang fonksiyonu ile korunmalı');
+  assert.ok(popupJs.includes("changeLang('en')"), 'lang-en changeLang fonksiyonu ile korunmalı');
+  assert.ok(popupJs.includes('.catch(() => {})'), 'Dil butonları olası arka plan servis işçisi kopmalarında hatayı sessizce yakalamalı');
+});
+
+test('Background Mesaj Yönlendirme ve Dil Duyarlılığı: set_lang, save, toggle ve bilinmeyen işlem', () => {
+  const bgContent = fs.readFileSync(path.join(rootDir, 'background.js'), 'utf-8');
+  assert.ok(bgContent.includes("message?.type === 'set_lang'"), 'set_lang mesaj türü background.js içinde ele alınmalı');
+  assert.ok(bgContent.includes("message?.type === 'save'"), 'save mesaj türü background.js içinde ele alınmalı');
+  assert.ok(bgContent.includes("message?.type === 'toggle'"), 'toggle mesaj türü background.js içinde ele alınmalı');
+  assert.ok(bgContent.includes("message?.type === 'clear'"), 'clear mesaj türü background.js içinde ele alınmalı');
+  assert.ok(bgContent.includes("message?.type === 'forget'"), 'forget mesaj türü background.js içinde ele alınmalı');
+  assert.ok(bgContent.includes("message?.type === 'test'"), 'test mesaj türü background.js içinde ele alınmalı');
+  assert.ok(bgContent.includes("isEn ? 'Unknown operation.' : 'Bilinmeyen işlem.'"), 'Bilinmeyen işlem hatası çift dilli dönmeli');
+});
+
+

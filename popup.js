@@ -147,20 +147,37 @@ $('enabled').addEventListener('change', async () => {
     show($('enabled').checked ? t.radarEnabled : t.radarPausedMsg);
   } catch (error) {
     show(error.message, true);
-    paint(await send({ type: 'status' }));
+    try {
+      paint(await send({ type: 'status' }));
+    } catch {}
   }
 });
 
-$('lang-tr')?.addEventListener('click', async () => {
-  if (currentLang === 'tr') return;
-  updateLangUI('tr');
-  paint(await send({ type: 'set_lang', lang: 'tr' }));
+async function changeLang(lang) {
+  if (currentLang === lang) return;
+  updateLangUI(lang);
+  try {
+    if (chrome.storage?.local?.set) {
+      await chrome.storage.local.set({ lang });
+    }
+  } catch {}
+
+  try {
+    const res = await send({ type: 'set_lang', lang });
+    paint(res);
+  } catch {
+    try {
+      paint(await send({ type: 'status' }));
+    } catch {}
+  }
+}
+
+$('lang-tr')?.addEventListener('click', () => {
+  changeLang('tr').catch(() => {});
 });
 
-$('lang-en')?.addEventListener('click', async () => {
-  if (currentLang === 'en') return;
-  updateLangUI('en');
-  paint(await send({ type: 'set_lang', lang: 'en' }));
+$('lang-en')?.addEventListener('click', () => {
+  changeLang('en').catch(() => {});
 });
 
 $('test').addEventListener('click', () => action($('test'), async () => {
@@ -181,6 +198,13 @@ for (const type of ['clear', 'forget']) {
     show(type === 'clear' ? t.clearSuccess : t.forgetSuccess);
   }));
 }
+
+// Optimistic instant language display from local storage
+try {
+  chrome.storage?.local?.get?.(['lang'], items => {
+    if (items?.lang) updateLangUI(items.lang);
+  });
+} catch {}
 
 send({ type: 'status' }).then(paint).catch(error => show(error.message, true));
 
