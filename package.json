@@ -1,0 +1,18 @@
+{
+  "name": "zaman-radari",
+  "version": "1.0.0",
+  "description": "YouTube için Bilişsel STOP Kalkanı ve Zaman Radarı",
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.js"
+  },
+  "keywords": [
+    "chrome-extension",
+    "youtube",
+    "clickbait-filter",
+    "typesafe",
+    "manifest-v3"
+  ],
+  "author": "Tufan Koç",
+  "license": "MIT"
+}
