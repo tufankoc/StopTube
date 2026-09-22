@@ -28,22 +28,26 @@ async function slot(fn) {
 
 async function status() {
   const [local, session] = await Promise.all([
-    chrome.storage.local.get({ enabled: false, apiKey: '', rememberKey: true }),
-    chrome.storage.session.get({ apiKey: '', calls: 0, cache: {} })
+    chrome.storage.local.get({ enabled: true, apiKey: '', rememberKey: true, persistentCache: {} }),
+    chrome.storage.session.get({ apiKey: '', calls: 0 })
   ]);
-  const activeKey = session.apiKey || (local.rememberKey ? local.apiKey : '');
+  const activeKey = session.apiKey || (local.rememberKey !== false ? local.apiKey : '');
+  const cachedCount = Object.keys(local.persistentCache || {}).length;
   return {
-    enabled: local.enabled,
+    enabled: local.enabled !== false,
     configured: !!activeKey,
-    rememberKey: !!local.rememberKey,
+    rememberKey: local.rememberKey !== false,
     calls: session.calls || 0,
-    cached: Object.keys(session.cache || {}).length
+    cached: cachedCount
   };
 }
 
-async function analyze(video) {
-  const fingerprint = JSON.stringify(video);
-  if (pending.has(fingerprint)) return pending.get(fingerprint);
+async function analyze(video, isWatch = false) {
+  const videoId = video.id;
+  if (!videoId) throw new Error('Video bilgisi okunamadı.');
+
+  const taskKey = `${videoId}_${isWatch ? 'watch' : 'card'}`;
+  if (pending.has(taskKey)) return pending.get(taskKey);
   if (pending.size >= 32) throw new Error('İstek kuyruğu dolu; biraz sonra tekrar dene.');
 
   const task = slot(async () => {
@@ -53,28 +57,35 @@ async function analyze(video) {
       const [saved, local] = await Promise.all([
         chrome.storage.session.get({
           apiKey: '',
-          cache: {},
           rate: { start: 0, count: 0 },
           cooldown: 0,
           calls: 0
         }),
-        chrome.storage.local.get({ apiKey: '', rememberKey: true })
+        chrome.storage.local.get({ apiKey: '', rememberKey: true, persistentCache: {} })
       ]);
-      const effectiveKey = saved.apiKey || (local.rememberKey ? local.apiKey : '');
+      const effectiveKey = saved.apiKey || (local.rememberKey !== false ? local.apiKey : '');
       if (!effectiveKey) throw new Error('Eklenti simgesinden API anahtarını gir.');
 
-      const hit = saved.cache[fingerprint];
-      // Eğer önbellekte geçerli zengin analiz varsa ve 24 saati geçmediyse kullan
-      if (hit && Date.now() - hit.at < 86400000 && hit.verdict && hit.text) {
-        return { analysis: hit };
+      const cache = local.persistentCache || {};
+      const hit = cache[videoId];
+
+      // 30 günlük kalıcı hafıza: Eğer daha önce taranmışsa tekrar Jev'e sorgu atılmaz (0 ms)
+      const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+      if (hit && Date.now() - hit.at < THIRTY_DAYS && hit.verdict && hit.text) {
+        const hasEnoughComments = Array.isArray(video.comments) && video.comments.length >= 2;
+        // Eğer watch sayfası değilse, veya zaten yorum analizi yapılmışsa veya sayfada yorum yoksa:
+        if (!isWatch || hit.hasComments || !hasEnoughComments) {
+          return { analysis: hit };
+        }
       }
 
+      // Yeni video veya yorum zenginleştirmesi için Jev çağrısı
       if (saved.cooldown > Date.now()) throw new Error('Jev kısa bir molada; bir dakika sonra tekrar dene.');
       const rate = Date.now() - saved.rate.start >= 60000 ? { start: Date.now(), count: 0 } : saved.rate;
       if (rate.count >= 24) throw new Error('Dakikalık 24 istek sınırına ulaşıldı.');
       rate.count++;
       await chrome.storage.session.set({ rate, calls: saved.calls + 1 });
-      return { key: effectiveKey, revision };
+      return { key: effectiveKey, revision, isEnrich: (isWatch && !!hit) };
     });
 
     if (ticket.analysis) return { ...ticket.analysis, cached: true };
@@ -91,20 +102,27 @@ async function analyze(video) {
       throw error;
     }
 
+    const hasComments = isWatch && Array.isArray(video.comments) && video.comments.length >= 2;
+
     await lock(async () => {
       if (ticket.revision !== revision) return;
-      const { cache = {} } = await chrome.storage.session.get('cache');
-      cache[fingerprint] = { ...analysis, at: Date.now() };
-      const entries = Object.entries(cache).sort((a, b) => b[1].at - a[1].at).slice(0, 200);
-      await chrome.storage.session.set({ cache: Object.fromEntries(entries) });
+      const { persistentCache = {} } = await chrome.storage.local.get('persistentCache');
+      persistentCache[videoId] = {
+        ...analysis,
+        hasComments: hasComments || !!persistentCache[videoId]?.hasComments,
+        at: Date.now()
+      };
+      // En güncel 2500 videoyu hafızada tut
+      const entries = Object.entries(persistentCache).sort((a, b) => b[1].at - a[1].at).slice(0, 2500);
+      await chrome.storage.local.set({ persistentCache: Object.fromEntries(entries) });
     });
 
     if (ticket.revision !== revision || !(await status()).enabled) throw new Error('Ayarlar değişti; tekrar dene.');
-    return { ...analysis, cached: false };
+    return { ...analysis, cached: false, enriched: ticket.isEnrich };
   });
 
-  pending.set(fingerprint, task);
-  try { return await task; } finally { pending.delete(fingerprint); }
+  pending.set(taskKey, task);
+  try { return await task; } finally { pending.delete(taskKey); }
 }
 
 async function handle(message, sender) {
@@ -124,7 +142,7 @@ async function handle(message, sender) {
   if (message?.type === 'analyze' && youtube) {
     const video = cleanVideo(message.video);
     if (!video) throw new Error('Video bilgisi okunamadı.');
-    return analyze(video);
+    return analyze(video, message.isWatch === true);
   }
 
   if (!popup) throw new Error('Bu işlem ayarlar ekranından yapılmalı.');
@@ -137,7 +155,7 @@ async function handle(message, sender) {
     const remember = message.remember !== false;
     await lock(async () => {
       revision++;
-      await chrome.storage.session.set({ apiKey: cleanKey, cooldown: 0, cache: {} });
+      await chrome.storage.session.set({ apiKey: cleanKey, cooldown: 0 });
       await chrome.storage.local.set({ enabled: true, rememberKey: remember, apiKey: remember ? cleanKey : '' });
     });
     return status();
@@ -151,7 +169,7 @@ async function handle(message, sender) {
   if (message?.type === 'clear') {
     await lock(async () => {
       revision++;
-      await chrome.storage.session.set({ cache: {} });
+      await chrome.storage.local.set({ persistentCache: {} });
     });
     return status();
   }
@@ -159,8 +177,8 @@ async function handle(message, sender) {
   if (message?.type === 'forget') {
     await lock(async () => {
       revision++;
-      await chrome.storage.local.set({ enabled: false, apiKey: '', rememberKey: false });
-      await chrome.storage.session.remove(['apiKey', 'cache']);
+      await chrome.storage.local.set({ enabled: false, apiKey: '', rememberKey: false, persistentCache: {} });
+      await chrome.storage.session.remove(['apiKey']);
     });
     return status();
   }

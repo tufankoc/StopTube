@@ -3,89 +3,81 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Bir Cümle · STOP Radarı</title>
+  <title>ZamanRadarı · YouTube için STOP Kalkanı</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-<header>
-  <div class="brand">
-    <span class="mark" aria-hidden="true">🛑</span>
-    <span>BİR CÜMLE<small>STOP & ZAMAN KAYBI RADARI</small></span>
-  </div>
-  <span id="badge" class="badge">Bağlı değil</span>
-</header>
-<main>
-  <section class="intro">
-    <p class="eyebrow">BİLİŞSEL RADAR</p>
-    <h1>Tıklamadan önce<br>STOP de<span>.</span></h1>
-    <p class="lede">İçi boş tüketim vitrinlerini, tık tuzaklarını ve zaman hırsızı videoları anında teşhis et.</p>
-  </section>
-
-  <section class="sample" aria-label="Örnek radar çıktısı">
-    <div class="sample-top">
-      <span class="sample-stamp">🛑 STOP</span>
-      <div class="sample-title-wrap">
-        <span class="sample-video-title">EVİMDE KULLANDIĞIM TÜM TEKNOLOJİK ÜRÜNLER</span>
-        <small>ÖRNEK KART · ATIK RİSKİ %72</small>
+  <header>
+    <div class="brand">
+      <span class="mark" aria-hidden="true">🛑</span>
+      <div class="brand-text">
+        <span class="brand-title">ZAMAN RADARI</span>
+        <span class="brand-sub">Bilişsel YouTube Kalkanı</span>
       </div>
     </div>
-    <div class="sample-summary">
-      <span class="sample-badge">ZAMAN KAYBI</span>
-      <p>Kişisel eşya ve tüketim vitrini; derin teknik analiz içermeyen rutin dolap turu. İzlemeye değmez.<small>Jev System One · Bilişsel Hüküm</small></p>
+    <div class="header-status">
+      <span id="badge" class="badge">Bağlı değil</span>
     </div>
-  </section>
+  </header>
 
-  <form id="key-form">
-    <div class="label-row">
-      <label for="api-key">TypeSafe API anahtarı</label>
-      <button type="button" id="reveal" class="text-button" aria-label="API anahtarını göster">Göster</button>
+  <main>
+    <!-- Kompakt Telemetri & Hafıza Çubuğu -->
+    <div class="telemetry-bar">
+      <div class="telemetry-item">
+        <span class="telemetry-dot"></span>
+        <span class="telemetry-label">Kalıcı Hafıza:</span>
+        <b id="cached">0</b>
+        <span class="telemetry-unit">video (0 ms)</span>
+      </div>
+      <button id="clear" class="subtle-btn" type="button" title="Hafızadaki videoları temizle">Temizle</button>
     </div>
-    <input id="api-key" name="api-key" type="password" autocomplete="off" spellcheck="false" placeholder="Anahtarını buraya gir" minlength="8" maxlength="2048">
-    <div class="remember-row">
-      <label class="checkbox-label" for="remember-key">
-        <input type="checkbox" id="remember-key" name="remember-key" checked>
-        <span>Bu tarayıcıda hatırla (Kalıcı sakla)</span>
+
+    <!-- API Anahtarı Formu -->
+    <form id="key-form" class="key-form">
+      <div class="field-header">
+        <label for="api-key">TypeSafe API Anahtarı</label>
+        <button type="button" id="reveal" class="text-link" aria-label="API anahtarını göster">Göster</button>
+      </div>
+      <div class="input-row">
+        <input id="api-key" name="api-key" type="password" autocomplete="off" spellcheck="false" placeholder="Anahtarını buraya gir" minlength="8" maxlength="2048">
+        <button class="primary-btn" type="submit" id="save" title="Kaydet">
+          <span>Kaydet</span>
+        </button>
+      </div>
+      <div class="checkbox-row">
+        <label class="checkbox-label" for="remember-key">
+          <input type="checkbox" id="remember-key" name="remember-key" checked>
+          <span>Bu cihazda hatırla (Kalıcı sakla)</span>
+        </label>
+      </div>
+    </form>
+
+    <!-- Radar Aç / Kapat Şeridi -->
+    <div class="toggle-card">
+      <div class="toggle-info">
+        <span class="toggle-title">Otomatik STOP Radarı</span>
+        <small class="toggle-desc">Küçük resimlerde 🛑 damgalar ve blur</small>
+      </div>
+      <label class="switch" title="Radarı Aç / Kapat">
+        <input id="enabled" type="checkbox" aria-label="Otomatik STOP Radarı">
+        <span></span>
       </label>
     </div>
-    <button class="primary" type="submit" id="save">Kaydet ve Radarı Başlat <span aria-hidden="true">↗</span></button>
-  </form>
 
-  <div class="control-row">
-    <div>
-      <label for="enabled">Otomatik STOP Radarı</label>
-      <small>Görünen YouTube kartları ve küçük resim damgaları</small>
+    <p id="feedback" role="status" aria-live="polite"></p>
+
+    <!-- Hızlı Eylemler -->
+    <div class="bottom-actions">
+      <button id="test" type="button" class="action-btn">⚡ Hızlı Test</button>
+      <button id="forget" type="button" class="action-btn danger">Anahtarı Sil</button>
     </div>
-    <label class="switch">
-      <input id="enabled" type="checkbox" aria-label="Otomatik açıklamalar">
-      <span></span>
-    </label>
-  </div>
+  </main>
 
-  <div class="stats">
-    <span><b id="calls">0</b> istek / oturum</span>
-    <span><b id="cached">0</b> önbellekte</span>
-    <span>En çok <b>24</b> / dk</span>
-  </div>
+  <footer>
+    <span>v1.0.0 · Jev System One</span>
+    <span>Oturum İstek: <b id="calls">0</b></span>
+  </footer>
 
-  <div class="actions">
-    <button id="test" type="button">STOP Teşhisini Dene</button>
-    <button id="clear" type="button">Önbelleği Temizle</button>
-    <button id="forget" type="button">Anahtarı Sil</button>
-  </div>
-
-  <p id="feedback" role="status" aria-live="polite"></p>
-
-  <details>
-    <summary>Radar nasıl çalışır?</summary>
-    <p>YouTube ana sayfası ve önerilerdeki videoların başlıkları TypeSafe Jev (System One) modeline gönderilir.</p>
-    <p>Model; videonun tüketim vitrini, tık tuzağı, teknik rehber veya eğlence mi olduğunu 0.05 ms'de tartıp video kartı üzerine 🛑 STOP damgası ve net bir hüküm cümlesi basar.</p>
-    <p>İzleme geçmişi, çerez veya kullanıcı verisi asla toplanmaz.</p>
-  </details>
-</main>
-<footer>
-  <span>ZAMANINI VE ODAĞINI KORU.</span>
-  <span>v0.2</span>
-</footer>
-<script src="popup.js"></script>
+  <script src="popup.js"></script>
 </body>
 </html>

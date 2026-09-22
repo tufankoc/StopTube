@@ -145,7 +145,7 @@
     record.attempted = true;
     render(record, null, false, true);
 
-    const response = await send({ type: 'analyze', video: record.video });
+    const response = await send({ type: 'analyze', video: record.video, isWatch: false });
     record.busy = false;
 
     if (records.get(record.card) !== record || !enabled || !allowed()) return;
@@ -284,7 +284,7 @@
     watchRecord.running = true;
     renderWatchBanner(banner, null, false, true);
 
-    const response = await send({ type: 'analyze', video });
+    const response = await send({ type: 'analyze', video, isWatch: true });
     watchRecord.running = false;
     watchRecord.done = response.ok;
     renderWatchBanner(banner, response.ok ? response : response.error, !response.ok);
